@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Data files (large — download separately)
+data/backblaze/*.csv
+data/backblaze/*.zip
+data/nasa_cmapss/*.txt
+data/nasa_cmapss/*.zip
+data/ai4i_2020/*.csv
+data/custom_telemetry/*.csv
+data/custom_telemetry/*.db
+data/processed/*.csv
+data/processed/*.parquet
+
+# Model artifacts (generated — retrain on each device)
+server/models/*.h5
+server/models/*.pkl
+server/models/*.tflite
+server/models/*.onnx
+server/models/*.pt
+edge/models/*.tflite
+edge/models/*.pkl
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+
+# Grafana
+grafana-data/
+
+# Keep empty directories
+!data/backblaze/.gitkeep
+!data/nasa_cmapss/.gitkeep
+!data/ai4i_2020/.gitkeep
+!data/custom_telemetry/.gitkeep
+!data/processed/.gitkeep
+!server/models/.gitkeep
+!edge/models/.gitkeep
