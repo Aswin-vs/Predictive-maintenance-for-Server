@@ -18,6 +18,11 @@
 - 🏨 Hospital (cloud): **Lenovo LOQ RTX 4060** (Deep multi-model decision fusion, PyTorch CUDA ST-GCN/MAD-GAN, Ollama Llama 3.1 8B, TimescaleDB, Grafana)
 - 💻 Dev machine: **Lenovo IdeaPad S145**
 
+- **2026-10-06 (Session 20 — Public GitHub Repository Creation & Master Push):**
+  - **GitHub Repository Provisioning & Deployment:** Programmatically created the public repository `Predictive-maintenance-for-Server` under user `Aswin-vs` via GitHub API with issues, wiki, and project tracking enabled.
+  - **Branch Normalization & Push:** Renamed the local branch to `main`, linked the remote origin (`https://github.com/Aswin-vs/Predictive-maintenance-for-Server.git`), and pushed the clean release commit (`git push -u origin main`).
+  - **Live URL:** [https://github.com/Aswin-vs/Predictive-maintenance-for-Server](https://github.com/Aswin-vs/Predictive-maintenance-for-Server) is live and verified with clean README rendering, architecture tables, models, and zero credential leaks.
+
 - **2026-10-05 (Session 19 — GitHub Release Preparation, Security Audit & Production Commit):**
   - **Large File Safety & .gitignore Hardening:** Audited repository storage footprint and identified 9.56 GB of raw dataset files in `data/` that would trigger GitHub push failure (`GH001: Large files detected >100MB`). Hardened `.gitignore` to ignore raw datasets while preserving `data/README.md`. Ignored scratch scripts and `.pytest_cache/`. Un-ignored pre-trained models in `edge/models/` and `server/models/` (total footprint only 13.19 MB) so cloned repositories are immediately functional without retraining.
   - **Security Sanitization & Template Configs:** Sanitized `implementation/HANDOVER.md` to replace live passwords and admin email with placeholders. Confirmed live `.env` files and `api_keys.json` remain excluded. Generated clean `.example` templates for `network.env`, `api_keys.json`, `edge.env`, `cloud.env`, and `server.env`.
