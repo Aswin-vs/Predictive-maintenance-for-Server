@@ -1,755 +1,788 @@
-# 🖥️ Edge-AI Predictive Maintenance for Server Hardware — Complete System Design
+# 🏗️ Production-Ready Upgrade — Implementation Plan v2.0
 
-> A B.Tech Final Year Project — CSE with AI Specialization
-> Inspired by Paper 1 (EDGE-IJME 2025) and Paper 2 (Applied Sciences 2026)
-
-> **⚠️ ARCHITECTURE CORRECTION (2026-08-02):**
-> This document was originally written assuming the RTX 4060 laptop is BOTH the server being monitored AND the cloud backend. **THIS IS WRONG.**
-> 
-> **Corrected architecture (3 devices):**
-> - 🏥 **Separate Server/Device** (TBD) = the "patient" being monitored. Runs telemetry agent. External sensors placed near it.
-> - 🩺 **Raspberry Pi 4** = the "doctor" (edge). Runs TFLite models, operator dashboard, MQTT broker, WiFi hotspot.
-> - 🏨 **Lenovo LOQ RTX 4060** = the "hospital" (cloud). ONLY for GPU training, deep analysis offloading, and Grafana dashboard. **Does NOT run telemetry agent. Is NOT monitored.**
-> 
-> The rest of this document (models, features, datasets, loss functions, etc.) remains valid — only the device-role mapping in §2 is affected. See `device_roles.md` and `MEMORIES.md` for the corrected architecture.
+> **Author:** `@claude-architect` (Lead Architect & Senior ML Engineer)  
+> **Date:** 2026-08-09  
+> **Scope:** 3 Phases — Codebase Audit → Multi-Tenant Storage → Continuous Learning  
+> **Prerequisite Read:** `MEMORIES.md`, `PROJECT_SUMMARY.md`, `pre_deployment_audit_report.md`  
+> **Status:** ⏳ AWAITING USER APPROVAL — Do NOT implement until user says "Approved"
 
 ---
 
-## 1. Project Vision & Problem Statement
+## Table of Contents
 
-**Problem:** Server hardware failures (CPU, GPU, HDD/SSD, PSU, RAM, cooling fans) cause unplanned downtime, data loss, and expensive emergency repairs. Traditional reactive maintenance only responds after failure. Cloud-only predictive systems suffer from latency, bandwidth costs, and single points of failure during network outages.
-
-**Solution:** A hybrid **Edge-AI predictive maintenance system** that:
-- Monitors **all major server hardware** components in real-time
-- Uses **both built-in telemetry** (SMART, nvidia-smi, WMI) **and external sensors** (temperature, vibration, acoustic)
-- Deploys lightweight AI models on a **Raspberry Pi 4** (edge) for instant anomaly detection
-- Offloads uncertain/complex predictions to the **server (RTX 4060)** for deep analysis
-- Provides **Time-to-Failure (TTF)** estimates — not just binary pass/fail
-- Features a **confidence-aware hybrid architecture** (directly from Paper 2)
-
-**What makes this an AI project:** Multi-model deep learning pipeline (1D-CNN fault classifier, LSTM-Autoencoder anomaly detector, TTF regression head), model quantization (INT8), edge-cloud inference fusion, asymmetric loss functions, and SHAP explainability.
+1. [Phase 1: Deep Codebase Audit Results](#phase-1-deep-codebase-audit-results)
+2. [Phase 2: Multi-Tenant Data Storage Architecture](#phase-2-multi-tenant-data-storage-architecture)
+3. [Phase 3: Continuous Learning & Personalization Pipeline](#phase-3-continuous-learning--personalization-pipeline)
+4. [Step-by-Step Implementation Tasks](#step-by-step-implementation-tasks)
+5. [Open Questions for User](#open-questions-for-user)
+6. [Verification Plan](#verification-plan)
 
 ---
 
-## 2. System Architecture
+# Phase 1: Deep Codebase Audit Results
 
-### 2.1 High-Level Architecture Diagram
+> **Files Read:** All 48+ source, config, and documentation files across `edge/`, `server/`, `dashboard/`, `configs/`, `docs/`, `tests/`, and root scripts.
 
+## 1.1 🔴 NEW Bugs Found (Not Previously Documented)
+
+### BUG-N1: Feature Ordering Not Deterministic Between Training and Edge Inference
+
+**Severity:** 🔴 HIGH — Silent accuracy degradation  
+**Files:**
+- [train_classifier.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/train_classifier.py) (Lines 159-235)
+- [edge/main.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/main.py) (Lines 103-158)
+
+**Problem:** The 1D-CNN was trained on AI4I 2020 data with features in this order:
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              PHYSICAL LAYER                                                  │
-│                                                                                              │
-│  ┌──────────────────────────────┐          ┌─────────────────────────────────────────┐       │
-│  │       SERVER (Laptop)         │          │        EDGE DEVICE (RPi4)                │       │
-│  │       RTX 4060 / i7/i9        │          │        4GB/8GB RAM, ARM Cortex-A72      │       │
-│  │                                │          │                                         │       │
-│  │  ┌─────────────────────────┐  │          │  ┌───────────────────────────────────┐  │       │
-│  │  │  Telemetry Agent        │  │  MQTT/   │  │  Edge Inference Engine            │  │       │
-│  │  │  ├─ psutil (CPU/RAM)    │  │  REST    │  │  ├─ TFLite INT8 Classifier        │  │       │
-│  │  │  ├─ nvidia-smi (GPU)    │──┼──────────┼──│  ├─ Lightweight TTF Estimator     │  │       │
-│  │  │  ├─ pySMART (HDD/SSD)  │  │          │  │  ├─ Anomaly Detector (IsoForest)  │  │       │
-│  │  │  ├─ LibreHWMon (Temps)  │  │          │  │  └─ Confidence Router             │  │       │
-│  │  │  └─ WMI (PSU/Events)    │  │          │  └───────────────────────────────────┘  │       │
-│  │  └─────────────────────────┘  │          │           │          │                   │       │
-│  │                                │          │     confident?   uncertain?             │       │
-│  │  ┌─────────────────────────┐  │          │        ▼               ▼                │       │
-│  │  │  Deep Analysis Engine   │  │  ◀────── │  ┌─────────┐  ┌──────────────┐         │       │
-│  │  │  ├─ Full FP32 Models    │  │ offload  │  │ Local   │  │ Offload to   │         │       │
-│  │  │  ├─ LSTM-AE Anomaly     │  │          │  │ Alert   │  │ Server GPU   │         │       │
-│  │  │  ├─ TTF Regression      │  │          │  └─────────┘  └──────────────┘         │       │
-│  │  │  ├─ SHAP Explainer      │  │          │                                         │       │
-│  │  │  └─ Model Retraining    │  │          │  ┌───────────────────────────────────┐  │       │
-│  │  └─────────────────────────┘  │          │  │  EXTERNAL SENSORS (GPIO/I2C)      │  │       │
-│  │                                │          │  │  ├─ DHT22 (Ambient Temp/Humidity) │  │       │
-│  │  ┌─────────────────────────┐  │          │  │  ├─ ADXL345 (Vibration/Accel.)    │  │       │
-│  │  │  Dashboard + Alerts     │  │          │  │  └─ MAX4466 (Acoustic/Sound)      │  │       │
-│  │  │  ├─ Grafana/Web UI      │  │          │  └───────────────────────────────────┘  │       │
-│  │  │  ├─ TTF Countdown       │  │          │                                         │       │
-│  │  │  └─ Email/Telegram Bot  │  │          └─────────────────────────────────────────┘       │
-│  │  └─────────────────────────┘  │                                                            │
-│  └──────────────────────────────┘                                                            │
-└─────────────────────────────────────────────────────────────────────────────────────────────┘
+cpu_temp, cpu_thermal_ramp, gpu_temp, gpu_thermal_ramp, cpu_ambient_delta,
+thermal_ratio, fan_rpm, fan_rpm_delta, fan_rpm_rolling_std, psu_power,
+psu_power_delta, psu_efficiency, wear_level, wear_rate, wear_normalized,
+wear_remaining, power_speed_ratio, mechanical_stress, temp_rolling_mean,
+temp_rolling_std, _pad_20, _pad_21, ..., _pad_27
 ```
 
-### 2.2 Confidence-Aware Hybrid Inference Flow (from Paper 2)
-
-```mermaid
-flowchart TD
-    A["Telemetry Data Arrives<br/>(every 5 seconds)"] --> B["Edge Preprocessing<br/>(RPi4)"]
-    B --> C["Feature Extraction<br/>(28 features)"]
-    C --> D["TFLite INT8 Model<br/>(Fault Classification)"]
-    D --> E{"Confidence > 0.85?"}
-    E -->|Yes — High Confidence| F["Edge Decision<br/>• Classify Fault Type<br/>• Estimate TTF locally<br/>• Generate Alert if critical"]
-    E -->|No — Low Confidence| G["Offload to Server GPU<br/>(Full FP32 Model)"]
-    G --> H["Deep Analysis<br/>• LSTM-AE Anomaly Score<br/>• Precise TTF Regression<br/>• SHAP Explanation"]
-    H --> I["Server Decision<br/>• Detailed Diagnosis<br/>• Root Cause Analysis<br/>• Maintenance Recommendation"]
-    F --> J["Dashboard Update<br/>+ Alert System"]
-    I --> J
-    J --> K["InfluxDB/SQLite<br/>Time-Series Storage"]
+But `edge/main.py::extract_features()` produces features in a **completely different order**:
+```
+cpu_temp, gpu_temp, cpu_load, cpu_freq, gpu_power, gpu_util, gpu_mem_used,
+gpu_clock, ram_used_gb, ram_total_gb, ram_page_faults, ambient_temp, humidity,
+vibration_rms, acoustic_rms, system_uptime, smart_5_raw, smart_9_raw, ...
 ```
 
-> [!IMPORTANT]
-> This is the **key differentiator from Paper 1** — Paper 2's confidence-aware offloading. ~85-90% of predictions are handled locally on RPi4 (low latency, no network dependency). Only uncertain cases go to the server GPU for deep analysis.
+**Impact:** Feature index 0 during training = `cpu_temp` (Kelvin-converted from AI4I). Feature index 0 at edge = `cpu_temp` (raw Celsius from telemetry). Feature index 1 during training = `cpu_thermal_ramp` (diff over dataframe). Feature index 1 at edge = `gpu_temp`. **Every feature position mismatches.** The model receives data in a schema it was never trained on. The 99% accuracy on AI4I validation data is **meaningless at edge inference time**.
+
+**Root Cause:** The training pipeline creates features from AI4I industrial machinery columns (air_temp, torque, rotational_speed, tool_wear), while the edge pipeline creates features from server telemetry columns (cpu_temp, gpu_temp, smart_X, psu_voltage). These are entirely different domains with different scales, distributions, and feature positions. There is no shared feature schema contract between training and inference.
+
+**Why this hasn't caused visible failures:** The edge pipeline currently runs on dummy simulator data which bypasses the CNN via `mock_class` (see [run_dummy_simulator.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/run_dummy_simulator.py) line 17 — every anomaly payload includes `mock_class`). Both `edge_inference.py` (line 83) and `inference_server.py` (line 70) check for `mock_class` and skip model inference. **No one has tested the actual TFLite model on real telemetry yet.**
+
+**Fix Required:** Create a **shared feature schema** (`FEATURE_SCHEMA_V1`) that both training and inference pipelines reference. This is addressed in Phase 2/3 where we retrain on real telemetry.
 
 ---
 
-## 3. Hardware Components & What They Monitor
+### BUG-N2: `mock_class` Feature Leaks into Model Input Vector
 
-### 3.1 Server Hardware Monitoring Matrix
-
-| Component | Built-in Telemetry Source | Key Metrics | External Sensor (via RPi4) | TTF Model Type |
-|-----------|--------------------------|-------------|----------------------------|----------------|
-| **HDD/SSD** | pySMART → S.M.A.R.T. data | Reallocated sectors (5), Power-on hours (9), Uncorrectable errors (187), Pending sectors (197), Seek error rate (7) | ADXL345 vibration (detect bearing wear) | **XGBoost Regression** → days-to-failure |
-| **CPU** | psutil + LibreHWMon | Temperature (per-core), Load %, Frequency, Throttle events, Context switches | DHT22 ambient temp (detect cooling failure) | **1D-CNN Classifier** + LSTM TTF |
-| **GPU** | nvidia-smi + GPUtil | Temperature, Power draw, Memory utilization, Clock speed, ECC errors, Thermal throttle events | MAX4466 acoustic (detect fan bearing noise) | **LSTM-Autoencoder** anomaly + TTF |
-| **RAM** | WMI + Windows Event Log | ECC correctable errors, Page faults, Memory pressure, Hardware events | — (software only) | **Random Forest Classifier** |
-| **PSU** | LibreHWMon + WMI | Voltage rails (3.3V, 5V, 12V), Power draw, Temperature | DHT22 (PSU exhaust temp) | **Isolation Forest** anomaly detection |
-| **Fans** | LibreHWMon + WMI | RPM values, Fan duty cycle | MAX4466 (acoustic signature of failing bearings) | **Anomaly Detection** (Z-score + IF) |
-
-### 3.2 RPi4 GPIO Sensor Wiring Plan
-
-```
-                    Raspberry Pi 4 GPIO Header
-                    ┌─────────────────────────┐
-                    │  3.3V ── DHT22 VCC      │  Pin 1
-                    │  GPIO4 ── DHT22 DATA    │  Pin 7
-                    │  GND ──── DHT22 GND     │  Pin 9
-                    │                         │
-                    │  3.3V ── ADXL345 VCC    │  Pin 17
-                    │  SDA1 ── ADXL345 SDA    │  Pin 3 (GPIO2)
-                    │  SCL1 ── ADXL345 SCL    │  Pin 5 (GPIO3)
-                    │  GND ──── ADXL345 GND   │  Pin 25
-                    │                         │
-                    │  3.3V ── MAX4466 VCC    │  Pin 17 (shared)
-                    │  ADC ─── MAX4466 OUT    │  Via MCP3008 ADC
-                    │  GND ──── MAX4466 GND   │  Pin 39
-                    └─────────────────────────┘
-
-    Note: RPi4 has no analog input, so MAX4466 requires
-    an MCP3008 SPI ADC converter (8-channel, 10-bit)
-```
-
-> [!NOTE]
-> The external sensors serve **dual purposes**: (1) they provide physical environment data that software telemetry can't capture (ambient temperature, vibration patterns, acoustic signatures), and (2) they demonstrate real IoT sensor integration for your project evaluation.
-
----
-
-## 4. Datasets — What to Use & Where to Get Them
-
-### 4.1 Primary Datasets
-
-| Dataset | Source | Size | Purpose | Components Covered |
-|---------|--------|------|---------|-------------------|
-| **Backblaze Drive Stats Q1 2023** | [backblaze.com/cloud-storage/resources/hard-drive-test-data](https://www.backblaze.com/cloud-storage/resources/hard-drive-test-data) | ~2.35M rows (10 days subset) | HDD failure classification + **TTF regression** | HDD/SSD |
-| **NASA C-MAPSS (FD001-FD004)** | [NASA Prognostics Data Repository](https://data.nasa.gov/dataset/C-MAPSS-Aircraft-Engine-Simulator-Data/xaut-bemq) | 26 sensors × 100+ engines | **RUL/TTF regression benchmark** — train TTF models, then transfer to server data | CPU/GPU degradation analogy |
-| **AI4I 2020 Predictive Maintenance** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset) | 10,000 rows, 14 features | Multi-failure-mode classification (heat dissipation, power, overstrain, tool wear) | CPU/PSU/General |
-| **Custom Live Telemetry** | Your own server (collected by telemetry agent) | Continuous collection over 2-4 weeks | Real-world validation + model fine-tuning | ALL components |
-
-### 4.2 How to Build the TTF (Time-to-Failure) Labels
-
-> [!IMPORTANT]
-> This is **critical** and what your professor will evaluate as the AI contribution. You specifically asked for TTF instead of binary pass/fail — here's how to construct it.
-
-#### For Backblaze HDD Data:
-```
-For each drive that eventually failed (failure=1):
-    1. Find the failure_date (the row where failure=1)
-    2. For every earlier row of that drive:
-        TTF_days = failure_date - current_date
-    3. For drives that never failed during the observation period:
-        TTF_days = censored (mark as "right-censored" or assign large value)
-
-This transforms the binary classification into a regression problem:
-    Input: [SMART_5, SMART_9, SMART_187, SMART_197, SMART_198, ...] 
-    Output: TTF_days (continuous value, 0 = failure imminent)
-```
-
-#### For NASA C-MAPSS (Transfer Learning Base):
-```
-RUL labels are pre-computed in the dataset:
-    RUL = max_cycle - current_cycle
-    
-Train LSTM-Autoencoder on this, then fine-tune on your server telemetry
-```
-
-#### For Custom Server Telemetry:
-```
-Since you can't wait for actual hardware failures:
-    1. Simulate degradation by running stress tests + thermal throttling
-    2. Use "Health Index" approach:
-        HI(t) = weighted_sum(normalized_sensor_values)
-        TTF_estimated = time_until(HI < critical_threshold)
-    3. Inject synthetic faults (cover air vents, stress CPU, etc.)
-```
-
-### 4.3 Dataset for Each Component — Specific SMART Attributes
-
-| Component | Dataset | Key Features for Model |
-|-----------|---------|----------------------|
-| **HDD** | Backblaze Q1 2023 | `smart_5_raw` (reallocated sectors), `smart_9_raw` (power-on hours), `smart_187_raw` (uncorrectable errors), `smart_188_raw` (command timeout), `smart_197_raw` (pending sectors), `smart_198_raw` (uncorrectable sector count), **Δ-features** (rate of change over 7 days) |
-| **CPU** | AI4I 2020 + Custom telemetry | Temperature, load %, frequency, thermal throttle count, context switches, **thermal_ramp_rate** (°C/min), ambient-CPU delta |
-| **GPU** | Custom nvidia-smi collection | Temperature, power draw, memory util, clock speed, ECC SBE count, ECC SBE rate, **thermal_ramp_rate**, fan RPM, XID error count |
-| **RAM** | Custom WMI collection | Page faults/sec, committed bytes, ECC CE count, ECC CE rate, hardware error events |
-| **PSU** | Custom LibreHWMon | Voltage rails (3.3V, 5V, 12V), power draw, PSU temp, **voltage_deviation** from nominal |
-| **Fans** | Custom LibreHWMon | RPM, duty cycle, **RPM_deviation** from expected, acoustic RMS level |
-
----
-
-## 5. AI/ML Model Architecture
-
-### 5.1 Multi-Head Model Design
-
-The system uses a **multi-task, multi-model architecture** — not a single monolithic model. This is both more practical and more impressive for your project:
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    SERVER-SIDE MODELS (FP32, GPU)                       │
-│                                                                         │
-│  ┌─────────────────────────────────┐  ┌──────────────────────────────┐ │
-│  │   LSTM-Autoencoder (Anomaly)    │  │   1D-CNN Multi-Task Model    │ │
-│  │                                  │  │                              │ │
-│  │   Encoder:                       │  │   Input: 28 features         │ │
-│  │   ├─ LSTM(64) → LSTM(32)        │  │   ├─ Conv1D(32, k=3) + ReLU │ │
-│  │   │   (Bottleneck: 16-dim)       │  │   ├─ Conv1D(64, k=3) + ReLU │ │
-│  │   Decoder:                       │  │   ├─ MaxPool1D              │ │
-│  │   ├─ LSTM(32) → LSTM(64)        │  │   ├─ Dense(128) + Dropout   │ │
-│  │                                  │  │   │                          │ │
-│  │   Output: Reconstruction Error   │  │   ├─ HEAD 1: Softmax(7)     │ │
-│  │   If error > threshold →         │  │   │  (Fault Classification)  │ │
-│  │   ANOMALY DETECTED               │  │   │                          │ │
-│  │                                  │  │   └─ HEAD 2: Linear(1)      │ │
-│  │   Trained on "healthy" data only │  │      (TTF Regression)        │ │
-│  │   (unsupervised)                 │  │      with Asymmetric Loss    │ │
-│  └─────────────────────────────────┘  └──────────────────────────────┘ │
-│                                                                         │
-│  ┌─────────────────────────────────┐  ┌──────────────────────────────┐ │
-│  │   XGBoost (HDD Specialist)      │  │   SHAP Explainer             │ │
-│  │   Trained on Backblaze SMART     │  │   Why did the model predict  │ │
-│  │   Predicts: TTF_days for HDD     │  │   this? Feature importance   │ │
-│  │   Features: SMART + Δ-features   │  │   for operator understanding │ │
-│  └─────────────────────────────────┘  └──────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    EDGE-SIDE MODELS (INT8, RPi4 CPU)                    │
-│                                                                         │
-│  ┌─────────────────────────────────┐  ┌──────────────────────────────┐ │
-│  │   TFLite INT8 Classifier        │  │   Isolation Forest           │ │
-│  │   (Quantized from 1D-CNN)       │  │   (for PSU/Fan anomaly)      │ │
-│  │                                  │  │                              │ │
-│  │   Input: 17 features (pruned)    │  │   Unsupervised — no failure  │ │
-│  │   Output: Fault class + conf.    │  │   labels needed              │ │
-│  │   + Lightweight TTF estimate     │  │   Detects: voltage drift,    │ │
-│  │                                  │  │   RPM anomaly, power spikes  │ │
-│  │   Size: ~1.3 MB (quantized)      │  │                              │ │
-│  │   Latency: ~30-50ms on RPi4     │  │   Size: ~200 KB              │ │
-│  └─────────────────────────────────┘  └──────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 5.2 Model Details — The 7 Fault Classes
-
-| Class | Label | Description | Primary Sensors |
-|-------|-------|-------------|----------------|
-| 0 | `HEALTHY` | All systems nominal | All |
-| 1 | `HDD_DEGRADATION` | SMART values deteriorating | SMART attributes |
-| 2 | `THERMAL_CRITICAL` | CPU/GPU overheating, throttling | Temperature sensors |
-| 3 | `PSU_ANOMALY` | Voltage rail deviation, power instability | LibreHWMon voltages |
-| 4 | `FAN_FAILURE` | Fan RPM drop, acoustic anomaly | RPM + acoustic sensor |
-| 5 | `MEMORY_FAULT` | ECC errors increasing | WMI events |
-| 6 | `GPU_DEGRADATION` | ECC errors, clock drops, thermal runaway | nvidia-smi |
-
-### 5.3 Asymmetric Loss Function for TTF (from Paper 2)
+**Severity:** 🟠 MEDIUM — Corrupts model input  
+**File:** [edge/main.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/main.py#L153-L158)
 
 ```python
-# The key insight: OVERESTIMATING remaining life is DANGEROUS
-# (you think you have 30 days but it fails in 5 days = catastrophe)
-# UNDERESTIMATING is cautious and safe
-# (you think you have 5 days but it would last 30 = early replacement, minor cost)
-
-def asymmetric_ttf_loss(y_pred, y_true, alpha=2.0):
-    """
-    alpha > 1 penalizes overestimation more heavily
-    """
-    error = y_pred - y_true
-    loss = torch.where(
-        error > 0,                           # overestimation
-        alpha * (error ** 2),                 # heavy penalty
-        error ** 2                            # normal penalty
-    )
-    # Extra weight for imminent failures (TTF < 20% of max)
-    weights = torch.where(y_true < 0.2, 3.0, 1.0)
-    return (loss * weights).mean()
+# Lines 153-157: mock_class is APPENDED to the features DataFrame
+if 'mock_class' in flat_telemetry:
+    features['mock_class'] = flat_telemetry['mock_class']
+    feature_names.append('mock_class')
 ```
 
-> [!TIP]
-> This asymmetric loss is **your strongest AI contribution**. It's directly from Paper 2 and shows sophisticated understanding of real-world maintenance constraints. Your professor will appreciate the engineering judgment behind this.
+When `mock_class` is present, the DataFrame has **29 columns** (28 features + mock_class). This is then passed to `engine.run_inference(features_df)`. Inside `edge_inference.py` line 84:
+```python
+feature_values = features.values.astype(np.float32)  # Now 29 values, not 28
+```
+The `input_data.reshape(input_shape)` call (line 96) expects shape `(1, 28, 1)` but gets 29 values → **`ValueError` or silent truncation depending on NumPy behavior.**
 
-### 5.4 Training Strategy
+However, `edge_inference.py` doesn't actually use the model when `mock_class` is present — the `inference_server.py` checks `mock_class` at line 70 and returns hardcoded predictions. But if the cloud offload fails and falls back to local, the 29-value vector will crash TFLite.
 
-| Model | Training Data | Training Location | Optimization |
-|-------|--------------|-------------------|-------------|
-| 1D-CNN Classifier | AI4I 2020 + Custom telemetry | Server GPU (RTX 4060) | Train FP32 → Quantize to INT8 → Export TFLite |
-| LSTM-Autoencoder | Custom "healthy" telemetry (2+ weeks) | Server GPU | Unsupervised, no labels needed |
-| XGBoost HDD TTF | Backblaze Q1 2023 (with TTF labels) | Server GPU (`tree_method='hist', device='cuda'`) | Direct deploy (sklearn compatible) |
-| TTF Regression Head | NASA C-MAPSS (pretrain) → Fine-tune on custom | Server GPU | Transfer learning approach |
-| Isolation Forest | Custom PSU/Fan telemetry | Server CPU or RPi4 CPU | Lightweight, scikit-learn |
+**Fix:** Strip `mock_class` from the features DataFrame before passing to inference. Keep it as metadata, not as a model feature.
 
 ---
 
-## 6. Data Collection Pipeline — How the Telemetry Agent Works
+### BUG-N3: Data Leakage in Training — StandardScaler Fit on Full Dataset Including Test
 
-### 6.1 Server-Side Telemetry Agent (runs on your laptop)
+**Severity:** 🔴 HIGH — Inflated accuracy metrics  
+**Files:**
+- [train_classifier.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/train_classifier.py#L303-L306)
+- [train_lstm_ae.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/train_lstm_ae.py#L184-L187)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                  TELEMETRY COLLECTOR SERVICE                     │
-│                  (Python daemon on server)                       │
-│                                                                  │
-│  Every 5 seconds:                                                │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────────┐  │
-│  │   psutil     │  │  nvidia-smi   │  │  LibreHardwareMonitor  │  │
-│  │  ├ CPU temp  │  │  ├ GPU temp   │  │  ├ Motherboard temps   │  │
-│  │  ├ CPU load  │  │  ├ GPU power  │  │  ├ Voltage rails       │  │
-│  │  ├ CPU freq  │  │  ├ GPU mem %  │  │  ├ Fan RPMs            │  │
-│  │  ├ RAM used  │  │  ├ GPU clock  │  │  └ PSU sensors         │  │
-│  │  ├ Disk I/O  │  │  └ ECC errors │  │                        │  │
-│  │  └ Net I/O   │  └──────────────┘  └────────────────────────┘  │
-│  └─────────────┘                                                  │
-│         │                  │                     │                │
-│         └──────────────────┴─────────────────────┘                │
-│                           │                                       │
-│                    ┌──────▼──────┐                                │
-│                    │  Unified    │                                │
-│                    │  JSON       │    Every 60 seconds:           │
-│                    │  Payload    │──→ pySMART SMART dump          │
-│                    └──────┬──────┘                                │
-│                           │                                       │
-│                    ┌──────▼──────┐                                │
-│                    │   MQTT      │                                │
-│                    │  Publish    │──→ Topic: server/telemetry     │
-│                    │  + Local DB │──→ InfluxDB / SQLite           │
-│                    └─────────────┘                                │
-└─────────────────────────────────────────────────────────────────┘
+**Problem (`train_classifier.py` lines 303-306):**
+```python
+# Standardization happens BEFORE train/val split
+mean = X_out.mean(axis=0)
+std = X_out.std(axis=0) + 1e-8
+X_out = (X_out - mean) / std
+# ... THEN train/val split at line 408-414
 ```
 
-### 6.2 What Gets Collected (Full Feature List — 45+ raw features)
+The standardization (mean/std calculation) uses **the entire dataset including validation samples**. This means validation samples' statistics leak into the training features. The reported 99.07% accuracy is inflated because the scaler has "seen" the validation distribution during normalization.
+
+**Same issue in `train_lstm_ae.py` lines 184-187:** Scaler fitted on full healthy data before train/val split.
+
+**Impact:** Real-world accuracy will be lower than reported. For a B.Tech project this is a common mistake, but for production readiness it must be fixed.
+
+**Fix:** Split data FIRST, then fit scaler on TRAINING data only, then transform both train and val using the training scaler. Save the scaler alongside the model for use at inference time.
+
+---
+
+### BUG-N4: No Scaler Saved — Edge Inference Uses Raw Unscaled Features
+
+**Severity:** 🔴 HIGH — Model receives unscaled data at inference  
+**Files:**
+- [train_classifier.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/train_classifier.py#L303-L309) (scales during training)
+- [edge/main.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/main.py#L103-L158) (NO scaling during inference)
+- [edge/edge_inference.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/edge_inference.py#L83-L96) (feeds raw values to TFLite)
+
+**Problem:** The 1D-CNN was trained on standardized features (zero mean, unit variance). But the edge inference pipeline feeds **raw unscaled** feature values directly into the TFLite model. CPU temp might be 75.0°C, fan RPM might be 2500 — the model expects all inputs to be roughly in [-3, 3] range after standardization.
+
+**Root Cause:** The training script computes `mean` and `std` but never saves them. There is no `scaler.pkl` or `feature_stats.json` file. The edge pipeline has no way to know what normalization was applied during training.
+
+**Fix:** Save the scaler (mean/std arrays or a `StandardScaler` object) alongside the model during training, and load + apply it during edge inference.
+
+---
+
+### BUG-N5: Isolation Forest Uses 4 Features, But 3 Are Always Default/Zero
+
+**Severity:** 🟡 MEDIUM — Model predictions are meaningless  
+**Files:**
+- [edge/main.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/main.py#L138-L141)
+- [edge/edge_inference.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/edge_inference.py#L70-L78)
+
+**Problem:** The Isolation Forest is trained on 4 features: `psu_voltage_3v3_dev`, `psu_voltage_12v_dev`, `psu_voltage_stability`, `fan_rpm_deviation`. But in the edge feature extraction:
+
+```python
+# main.py line 140-141:
+features['psu_voltage_stability'] = 0.05   # HARDCODED DEFAULT
+features['fan_rpm_deviation'] = 0.0         # HARDCODED DEFAULT
+```
+
+`psu_voltage_stability` and `fan_rpm_deviation` are **always** constants. The Isolation Forest effectively operates on only 2 features (the voltage deviation percentages). Since the PSU voltages from `collector.py` are simulated random values near nominal (3.3V, 12V), the deviations are always near 0-3%. The IF model will almost never trigger.
+
+**Fix:** When real PSU/fan data is available (post-hardware assembly), compute rolling statistics for voltage stability and compare actual vs expected RPM for fan deviation.
+
+---
+
+### BUG-N6: LSTM-AE Anomaly Detection Not Wired into Edge Pipeline
+
+**Severity:** 🟡 MEDIUM — 2nd anomaly detector completely unused  
+**Files:**
+- [edge/edge_inference.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/edge_inference.py) — no LSTM-AE loading or inference
+- [server/deep_analysis/inference_server.py](file:///c:/Users/Aswin/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/deep_analysis/inference_server.py) — no LSTM-AE inference
+
+**Problem:** The architecture documents list 4 ML models: 1D-CNN, LSTM-AE, XGBoost, Isolation Forest. However:
+- The LSTM-AE (`lstm_ae.h5`) is trained and saved but **never loaded or called** anywhere in the inference pipeline
+- `edge_inference.py` only loads the TFLite classifier and Isolation Forest
+- `inference_server.py` only loads the FP32 classifier — no LSTM-AE
+- The architecture claims the LSTM-AE does anomaly detection on the cloud side, but `inference_server.py` doesn't use it
+
+**Fix (Phase 3):** Wire the LSTM-AE into `inference_server.py` for cloud-side anomaly detection. It should run on sliding windows of recent telemetry and flag reconstruction errors above the trained threshold (0.4382).
+
+---
+
+### BUG-N7: Catastrophic Time-Series Destruction in LSTM-AE Training
+
+**Severity:** 🔴 CRITICAL — Time-series sequence destroyed  
+**Files:**
+- `server/training/train_lstm_ae.py`
+
+**Problem:** In an attempt to fix data leakage, the script uses `np.random.permutation(n)` to shuffle raw 2D samples **BEFORE** passing them to `create_sliding_windows()`. The sliding windows (which should represent consecutive moments in time) are now composed of completely random, non-sequential data points.
+
+**Fix:** `create_sliding_windows()` must be applied to the ordered chronological data *first*, and ONLY THEN should the resulting 3D windows be randomly shuffled for the train/test split.
+
+---
+
+### BUG-N8: Broken Temporal Logic in Cloud Inference Windowing
+
+**Severity:** 🔴 CRITICAL — Anomaly detection invalid for first 10 requests  
+**Files:**
+- `server/deep_analysis/inference_server.py`
+
+**Problem:** The server maintains a sliding window buffer (`_server_windows`) of `maxlen=10`. If a new server connects and doesn't have 10 historical samples yet, the code pads the window by duplicating the *exact same current sample* 10 times, breaking the temporal history.
+
+**Fix:** Pad with zeros (masking) or wait until the buffer has 10 sequential samples before running LSTM-AE inference.
+
+---
+
+### BUG-N9: Garbage Calibration Data in TFLite Quantization
+
+**Severity:** 🔴 CRITICAL — Destroys edge model accuracy  
+**Files:**
+- `server/optimization/quantize_model.py`
+
+**Problem:** The representative dataset generator takes the *first 5 numerical columns* from `ai4i2020.csv` and pads them with 23 zeros before passing them to the StandardScaler. The scaler expects the exact 28 features in `FEATURE_NAMES_V1` order. The scaled output is meaningless, leading to incorrect dynamic range calculation during INT8 quantization.
+
+**Fix:** The dataset generator must properly extract the full 28 features using `FEATURE_NAMES_V1` from the dataframe before applying the scaler.
+
+---
+
+## 1.2 Previously Known Issues — Status Verification
+
+| Issue | Status | Verified? |
+|-------|--------|-----------|
+| C1-C7 (Pre-Flight 2026-08-03) | ✅ All Fixed | Yes — confirmed in code |
+| C1-C3 NEW (Pre-Deployment 2026-08-05) | ✅ All Fixed | Yes — `numpy` imported, `httpx` added, `state_lock` present |
+| M1-M6 (Medium issues) | ✅ All Fixed | Yes — real calibration data, `ai-edge-litert`, `torch` removed |
+| D1-D5 (Stale docs) | ✅ Mostly Fixed | Yes — some docs still reference old IPs in edge cases |
+| G5 (Empty Pydantic model) | ⚠️ Still Present | Non-blocking — `TelemetryPayload(BaseModel): pass` |
+| G8 (No auth on update_state) | ⚠️ Still Present | Acceptable for demo |
+
+## 1.3 Summary: What Must Be Fixed Before Production
+
+| # | Bug | Severity | Effort | Phase |
+|---|-----|----------|--------|-------|
+| N1 | Feature order mismatch (training vs inference) | 🔴 CRITICAL | High | Phase 3 (retrain) |
+| N2 | `mock_class` leaks into feature vector | 🟠 MEDIUM | 10 min | Phase 2 |
+| N3 | Data leakage (scaler fit on full dataset) | 🔴 CRITICAL | 30 min | Phase 3 (retrain) |
+| N4 | No scaler saved for edge inference | 🔴 CRITICAL | 30 min | Phase 3 (retrain) |
+| N5 | Isolation Forest gets constant features | 🟡 MEDIUM | Post-hardware | Phase 3 |
+| N6 | LSTM-AE not wired into inference | 🟡 MEDIUM | 2 hours | Phase 3 |
+
+---
+
+# Phase 2: Multi-Tenant Data Storage Architecture
+
+## 2.1 The Problem
+
+Currently:
+- **No server identity** — all telemetry arrives on the same MQTT topic (`server/telemetry`) with no way to differentiate which server sent it
+- **No persistent storage** — telemetry is processed in-memory and discarded. Historical data is lost after restart
+- **No separation** between demo/dummy data and real production data
+- **Single-server assumption** — the entire pipeline treats all telemetry as coming from one server
+
+## 2.2 Server Identity System
+
+### 2.2.1 UUID-Based Server Registration
+
+Each patient server gets a **UUID v4** identifier assigned at first boot. The UUID is:
+1. Auto-generated on first run of `mqtt_publisher.py` (if no UUID file exists)
+2. Persisted to a local file (`~/.predictive_maintenance/server_id.json`)
+3. Included in every MQTT telemetry payload as `"server_id": "<UUID>"`
+4. Registered in the cloud backend's server registry
 
 ```json
+// Example: ~/.predictive_maintenance/server_id.json
 {
-  "timestamp": "2026-08-01T23:15:00Z",
-  "cpu": {
-    "temp_package": 72.0,
-    "temp_cores": [70, 71, 73, 72, 71, 70],
-    "load_percent": 65.2,
-    "frequency_mhz": 4200,
-    "throttle_count": 0,
-    "context_switches": 15234
-  },
-  "gpu": {
-    "temp": 68.0,
-    "power_draw_w": 85.5,
-    "memory_used_mb": 3200,
-    "memory_total_mb": 8192,
-    "clock_mhz": 2100,
-    "fan_rpm": 1800,
-    "ecc_sbe_count": 0,
-    "utilization_percent": 45
-  },
-  "ram": {
-    "used_gb": 12.4,
-    "total_gb": 16.0,
-    "page_faults_sec": 120,
-    "committed_gb": 14.2
-  },
-  "hdd": {
-    "smart_5_raw": 0,
-    "smart_9_raw": 8760,
-    "smart_187_raw": 0,
-    "smart_188_raw": 0,
-    "smart_197_raw": 0,
-    "smart_198_raw": 0,
-    "smart_194_raw": 35,
-    "read_error_rate": 0,
-    "temperature": 35
-  },
-  "psu": {
-    "voltage_3v3": 3.312,
-    "voltage_5v": 5.021,
-    "voltage_12v": 12.045,
-    "power_draw_w": 180.5
-  },
-  "fans": {
-    "cpu_fan_rpm": 1200,
-    "case_fan1_rpm": 900,
-    "case_fan2_rpm": 920
-  },
-  "environment": {
-    "ambient_temp": 28.5,
-    "humidity": 55.2,
-    "vibration_rms": 0.12,
-    "acoustic_rms": 0.08
-  }
+    "server_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "server_name": "LOQ-Patient-01",
+    "hardware_profile": {
+        "cpu": "Ryzen 7 7840HS",
+        "gpu": "RTX 4060",
+        "ram_gb": 24,
+        "os": "Windows 11"
+    },
+    "registered_at": "2026-08-10T10:00:00Z",
+    "data_mode": "production"    // "demo" or "production"
 }
 ```
 
-### 6.3 RPi4-Side Sensor Collection (via GPIO)
+### 2.2.2 MQTT Topic Hierarchy (Multi-Tenant)
 
-The RPi4 collects from its **physically connected sensors** and combines them with data received from the server telemetry agent:
+**Current (single tenant):**
+```
+server/telemetry    ← flat, no identity
+```
+
+**Proposed (multi-tenant):**
+```
+server/<server_id>/telemetry       ← per-server telemetry
+server/<server_id>/alerts          ← per-server alerts from edge
+server/<server_id>/status          ← heartbeat / online status
+server/+/telemetry                 ← edge subscribes to ALL servers (wildcard)
+```
+
+The edge node (`mqtt_handler.py`) subscribes to `server/+/telemetry` and extracts the `server_id` from the topic. This enables monitoring multiple patient servers from a single RPi4 edge node.
+
+### 2.2.3 API Key Authentication (Optional)
+
+For production environments, add an API key in the MQTT payload:
+```json
+{
+    "server_id": "a1b2c3d4...",
+    "api_key": "sk_prod_xxxx",
+    "timestamp": "...",
+    "cpu": {...}
+}
+```
+
+The edge node validates the API key against a local allowlist (`configs/allowed_servers.json`) before processing.
+
+## 2.3 Database Architecture
+
+### 2.3.1 Technology Selection
+
+| Component | Current | Proposed | Rationale |
+|-----------|---------|----------|-----------|
+| **Edge (RPi4)** | In-memory dict only | **SQLite** (local ring buffer) | Lightweight, zero-config, survives reboots. Keep last 24h of telemetry per server as a local cache. |
+| **Cloud (LOQ)** | InfluxDB (partially configured) | **InfluxDB 2.x** (fully integrated) | Already installed in `LOQ_Server_Stack/`. Native time-series DB. Optimized for high-frequency writes, retention policies, and Grafana integration. |
+| **Cloud (metadata)** | None | **SQLite** on LOQ | Server registry, model versions, retraining logs. Lightweight and zero-dependency. |
+
+### 2.3.2 InfluxDB Schema (Cloud — LOQ)
 
 ```
-RPi4 Local Sensors (GPIO/I2C/SPI):
-├── DHT22 → ambient_temp, humidity (every 2 seconds)
-├── ADXL345 → vibration_x, vibration_y, vibration_z (every 100ms, then RMS computed)
-└── MAX4466 via MCP3008 → acoustic_level (every 100ms, then RMS + FFT)
+Bucket: telemetry_production
+  Measurement: server_telemetry
+    Tags:
+      - server_id (string)      ← partition key
+      - data_mode (string)      ← "demo" | "production"
+      - component (string)      ← "cpu" | "gpu" | "hdd" | "psu" | "ram" | "fans"
+    Fields:
+      - cpu_temp (float)
+      - cpu_load (float)
+      - gpu_temp (float)
+      - gpu_util (float)
+      - ... (all 28+ raw telemetry values)
+    Timestamp: nanosecond precision
 
-Server Telemetry (received via MQTT):
-├── All software telemetry from Section 6.2
-└── Arrives every 5 seconds
+Bucket: predictions
+  Measurement: inference_results
+    Tags:
+      - server_id
+      - model_version (string)
+      - inference_location (string)  ← "edge" | "cloud"
+    Fields:
+      - predicted_class (int)
+      - confidence (float)
+      - ttf_days (float)
+      - anomaly_detected (bool)
+      - health_index (float)
+    Timestamp: nanosecond precision
 
-FUSION → Combined feature vector (28-45 features) → Model input
+Bucket: telemetry_demo
+  (Same schema as telemetry_production, but for demo/dummy data)
+```
+
+### 2.3.3 Retention Policies
+
+| Bucket | Retention | Downsampling |
+|--------|-----------|-------------|
+| `telemetry_production` | **365 days** (indefinite for production servers) | After 30 days: downsample to 1-minute averages |
+| `telemetry_demo` | **7 days** (auto-purge) | None |
+| `predictions` | **365 days** | None |
+
+### 2.3.4 Data Flow Architecture
+
+```
+┌─────────────────┐      MQTT (server/<id>/telemetry)       ┌──────────────┐
+│  Patient Server  │ ────────────────────────────────────▶   │   RPi4 Edge  │
+│  (telemetry      │                                         │              │
+│   agent)         │                                         │  1. Process  │
+│                  │                                         │  2. Infer    │
+│  server_id: UUID │                                         │  3. Store    │
+└─────────────────┘                                         │     (SQLite  │
+                                                            │      24h     │
+                                                            │      cache)  │
+                                                            │  4. Forward  │
+                                                            │     to Cloud │
+                                                            └──────┬───────┘
+                                                                   │
+                                                      HTTP POST /api/ingest
+                                                                   │
+                                                            ┌──────▼───────┐
+                                                            │  LOQ Cloud   │
+                                                            │              │
+                                                            │  1. Write to │
+                                                            │     InfluxDB │
+                                                            │  2. Deep     │
+                                                            │     Analysis │
+                                                            │  3. Check    │
+                                                            │     retrain  │
+                                                            │     trigger  │
+                                                            └──────────────┘
+```
+
+### 2.3.5 New Cloud API Endpoint: `/api/ingest`
+
+A new endpoint on the cloud backend (`inference_server.py` or a new `ingest_api.py`) that:
+1. Receives processed telemetry + prediction results from the edge node
+2. Tags it with `server_id` and `data_mode`
+3. Writes to InfluxDB
+4. Checks if the server has reached the retraining data threshold (see Phase 3)
+
+---
+
+# Phase 3: Continuous Learning & Personalization Pipeline
+
+## 3.1 Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CONTINUOUS LEARNING PIPELINE                      │
+│                                                                      │
+│  ┌──────────┐    ┌──────────┐    ┌────────────┐    ┌─────────────┐ │
+│  │ Telemetry │───▶│ InfluxDB │───▶│  Retrain   │───▶│  Model      │ │
+│  │ Ingest    │    │ (30 days │    │  Trigger   │    │  Registry   │ │
+│  │           │    │  check)  │    │  Manager   │    │  (SQLite)   │ │
+│  └──────────┘    └──────────┘    └─────┬──────┘    └──────┬──────┘ │
+│                                        │                   │        │
+│                                        ▼                   ▼        │
+│                                  ┌──────────┐       ┌──────────┐   │
+│                                  │ Transfer  │       │ Deploy   │   │
+│                                  │ Learning  │       │ to Edge  │   │
+│                                  │ Trainer   │       │ (SFTP)   │   │
+│                                  └──────────┘       └──────────┘   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+## 3.2 Retraining Strategy — Trigger Mechanism
+
+### 3.2.1 Data Threshold Trigger
+
+A background scheduler on the cloud backend checks each registered server's data accumulation:
+
+| Condition | Action |
+|-----------|--------|
+| Server has **< 7 days** of data | Use the Base Model (generic, trained on AI4I + Backblaze) |
+| Server has **7-30 days** of data | Begin baseline profiling — compute per-server statistics |
+| Server has **≥ 30 days** of data | **TRIGGER personalized model training** |
+| Every **30 days** after first trigger | Re-trigger training with latest data |
+| **Anomaly rate > 10%** in last 24h | **EMERGENCY retrain** — potential drift detected |
+
+### 3.2.2 Trigger Check Implementation
+
+```python
+# Pseudocode for the retrain trigger (runs every 6 hours via scheduler)
+async def check_retrain_triggers():
+    for server in registry.get_all_servers():
+        data_days = influxdb.count_days(server.id, bucket="telemetry_production")
+        last_trained = registry.get_last_trained(server.id)
+        
+        if data_days >= 30 and (last_trained is None or days_since(last_trained) >= 30):
+            await trigger_retraining(server.id)
+```
+
+## 3.3 ML Architecture: Transfer Learning with Personalized Adapters
+
+### 3.3.1 Two-Tier Model Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│              BASE MODEL (Frozen)                  │
+│                                                   │
+│  Conv1D(32) → Conv1D(64) → MaxPool → Flatten     │
+│                     │                              │
+│            Shared Feature Extractor                │
+│           (Trained on ALL data, frozen)            │
+│                     │                              │
+│                     ▼                              │
+│  ┌──────────────────────────────────────┐         │
+│  │        PERSONALIZED ADAPTER           │         │
+│  │     (Per-server, lightweight)         │         │
+│  │                                       │         │
+│  │  Dense(64, relu) → Dropout(0.3)       │         │
+│  │           │              │            │         │
+│  │      ┌────▼────┐   ┌────▼────┐       │         │
+│  │      │ Class   │   │  TTF    │       │         │
+│  │      │ Head    │   │  Head   │       │         │
+│  │      │(Softmax)│   │(Linear) │       │         │
+│  │      └─────────┘   └─────────┘       │         │
+│  └──────────────────────────────────────┘         │
+└─────────────────────────────────────────────────┘
+```
+
+### 3.3.2 Why Transfer Learning?
+
+1. **Small data per server**: 30 days × 17,280 samples/day (at 5s intervals) = ~518K samples. Enough to fine-tune, not enough to train from scratch.
+2. **Preserve general patterns**: The base model's convolutional filters learn universal degradation signatures (thermal ramps, voltage drift). These transfer across servers.
+3. **Lightweight adapters**: Each server's adapter is only ~50KB (Dense(64) + 2 heads). Hundreds of servers = only a few MB of adapter weights.
+4. **Fast training**: Fine-tuning only the adapter layers takes 5-10 minutes on the RTX 4060 vs. 30+ minutes for full model training.
+5. **Safe rollback**: If the adapter degrades, fall back to the base model instantly.
+
+### 3.3.3 Adapter Training Process
+
+```python
+# Pseudocode
+def train_adapter(server_id: str):
+    # 1. Load base model and freeze convolutional layers
+    base_model = load_base_model("classifier_fp32.h5")
+    for layer in base_model.layers[:5]:  # Freeze Conv1D + MaxPool + Flatten
+        layer.trainable = False
+    
+    # 2. Query InfluxDB for this server's last 30 days of telemetry
+    data = influxdb.query(
+        f'from(bucket:"telemetry_production") |> filter(fn: (r) => r.server_id == "{server_id}")'
+    )
+    
+    # 3. Engineer 28 features using the SHARED feature schema
+    X, y_class, y_ttf = engineer_features(data, schema=FEATURE_SCHEMA_V1)
+    
+    # 4. Fit scaler on THIS server's training data only
+    scaler = StandardScaler().fit(X_train)
+    X_train = scaler.transform(X_train)
+    X_val = scaler.transform(X_val)
+    
+    # 5. Fine-tune adapter layers only (Dense + heads)
+    base_model.compile(...)
+    base_model.fit(X_train, [y_class, y_ttf], epochs=20, ...)
+    
+    # 6. Save adapter weights + scaler
+    save_adapter(server_id, base_model, scaler)
+    
+    # 7. Quantize to INT8 TFLite for edge deployment
+    quantize_and_export(base_model, server_id)
+```
+
+### 3.3.4 Labeling Strategy for Real Data
+
+Real server telemetry doesn't come with labels. We use **self-supervised labeling**:
+
+| Method | Applies To | How |
+|--------|-----------|-----|
+| **Threshold-based** | THERMAL_CRITICAL | CPU temp > 90°C sustained for > 30s → label class 2 |
+| **SMART deterioration** | HDD_DEGRADATION | smart_5 increasing, smart_197 > 0 → label class 1 |
+| **Voltage deviation** | PSU_ANOMALY | |V_actual - V_nominal| / V_nominal > 5% → label class 3 |
+| **RPM drop** | FAN_FAILURE | RPM < 50% of baseline for > 60s → label class 4 |
+| **Page fault spike** | MEMORY_FAULT | page_faults > 3σ above rolling mean → label class 5 |
+| **GPU clock drops** | GPU_DEGRADATION | clock < 70% baseline + temp > 85°C → label class 6 |
+| **Operator feedback** | Any | Dashboard button: "Flag this as anomaly" → adds human label |
+| **TTF estimation** | All | Based on rate of degradation slope. If metric is worsening at rate `r`, extrapolate TTF = (threshold - current) / r |
+
+## 3.4 Model Registry & Versioning
+
+### 3.4.1 SQLite Model Registry Schema (on LOQ)
+
+```sql
+CREATE TABLE model_registry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    server_id TEXT NOT NULL,
+    model_type TEXT NOT NULL,           -- 'base', 'adapter', 'iso_forest'
+    version INTEGER NOT NULL,
+    trained_at TIMESTAMP NOT NULL,
+    training_samples INTEGER,
+    training_days INTEGER,
+    val_accuracy REAL,
+    val_mae REAL,
+    model_path TEXT NOT NULL,           -- path to .h5 / .tflite / .pkl
+    scaler_path TEXT NOT NULL,          -- path to scaler.pkl
+    tflite_path TEXT,                   -- path to INT8 quantized version
+    status TEXT DEFAULT 'active',       -- 'active', 'superseded', 'failed'
+    deployed_to_edge BOOLEAN DEFAULT 0,
+    deployed_at TIMESTAMP,
+    notes TEXT
+);
+
+CREATE TABLE server_registry (
+    server_id TEXT PRIMARY KEY,
+    server_name TEXT,
+    hardware_profile TEXT,              -- JSON
+    registered_at TIMESTAMP,
+    data_mode TEXT DEFAULT 'production',
+    total_data_days INTEGER DEFAULT 0,
+    last_retrain_at TIMESTAMP,
+    active_model_version INTEGER,
+    FOREIGN KEY (active_model_version) REFERENCES model_registry(id)
+);
+
+CREATE TABLE retraining_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    server_id TEXT NOT NULL,
+    triggered_at TIMESTAMP NOT NULL,
+    trigger_reason TEXT,                -- 'scheduled', 'threshold', 'emergency', 'manual'
+    completed_at TIMESTAMP,
+    status TEXT,                        -- 'running', 'completed', 'failed'
+    old_model_version INTEGER,
+    new_model_version INTEGER,
+    improvement_pct REAL,              -- % improvement over old model
+    error_log TEXT
+);
+```
+
+## 3.5 Deployment Loop: Cloud → Edge
+
+### 3.5.1 Seamless Weight Update Protocol
+
+```
+                     Cloud (LOQ)                              Edge (RPi4)
+                         │                                        │
+    1. Train adapter ────┤                                        │
+    2. Quantize INT8 ────┤                                        │
+    3. Validate ─────────┤                                        │
+    4. Register ─────────┤                                        │
+                         │                                        │
+    5. SFTP transfer ────┼──── classifier_<server_id>_v2.tflite ─▶│
+                         │──── scaler_<server_id>_v2.pkl ─────────▶│
+                         │──── deploy_manifest.json ──────────────▶│
+                         │                                        │
+                         │            6. Edge receives ───────────┤
+                         │            7. Verify checksum ─────────┤
+                         │            8. Hot-swap model ──────────┤
+                         │                (no restart needed)     │
+                         │            9. ACK back ────────────────┤
+                         │◀─── {"status":"deployed","version":2} ─┤
+                         │                                        │
+   10. Mark deployed ────┤                                        │
+```
+
+### 3.5.2 Hot-Swap Without Restart
+
+The edge inference engine (`edge_inference.py`) will be enhanced with a model-reload mechanism:
+
+```python
+class EdgeInferenceEngine:
+    def reload_model(self, server_id: str = None):
+        """Hot-swap the TFLite model without restarting the edge process."""
+        # Check for new model files in the models directory
+        new_model = find_latest_model(server_id)
+        if new_model and new_model != self.current_model_path:
+            self.classifier = tflite.Interpreter(model_path=new_model)
+            self.classifier.allocate_tensors()
+            self.scaler = joblib.load(new_model.replace('.tflite', '_scaler.pkl'))
+            print(f"[HOT-SWAP] Loaded model v{version} for server {server_id}")
+```
+
+The edge `main.py` will check for new models every 60 seconds via a lightweight file-system poll.
+
+### 3.5.3 Multi-Server Model Loading
+
+When the edge node monitors multiple servers, it maintains a dictionary of per-server models:
+
+```python
+self.models = {
+    "a1b2c3d4...": {  # server_id
+        "classifier": tflite.Interpreter(...),
+        "scaler": StandardScaler(...),
+        "version": 2
+    },
+    "__default__": {  # fallback base model
+        "classifier": tflite.Interpreter("classifier_int8.tflite"),
+        "scaler": None,  # base model — no per-server scaler
+        "version": 1
+    }
+}
 ```
 
 ---
 
-## 7. Feature Engineering (The AI Part — 28 Engineered Features)
+# Step-by-Step Implementation Tasks
+
+> **Estimated total effort:** 3-4 days of focused coding  
+> **Devices needed:** IdeaPad S145 (coding) → LOQ RTX 4060 (training + testing)
+
+## Milestone 1: Foundation — Shared Feature Schema & Bug Fixes (Day 1)
+
+### Task 1.1: Create Shared Feature Schema Contract
+- **[NEW]** `server/training/feature_schema.py` — Defines `FEATURE_SCHEMA_V1`: ordered list of 28 feature names, their types, expected ranges, and normalization strategy
+- Both training and inference pipelines import from this single source of truth
+- Prevents BUG-N1 (feature order mismatch)
+
+### Task 1.2: Fix `mock_class` Leak (BUG-N2)
+- **[MODIFY]** `edge/main.py` — Strip `mock_class` from features DataFrame before passing to inference engine. Store it as a separate metadata field.
+
+### Task 1.3: Fix Data Leakage (BUG-N3) & Save Scaler (BUG-N4)
+- **[MODIFY]** `server/training/train_classifier.py` — Split data FIRST, then fit scaler on train only. Save scaler as `server/models/classifier_scaler.pkl`
+- **[MODIFY]** `server/training/train_lstm_ae.py` — Same fix. Save scaler as `server/models/lstm_ae_scaler.pkl`
+
+### Task 1.4: Load Scaler at Edge Inference
+- **[MODIFY]** `edge/edge_inference.py` — Load `classifier_scaler.pkl` (or `feature_stats.json`) and apply standardization before TFLite inference.
+
+## Milestone 2: Multi-Tenant Identity & MQTT (Day 1-2)
+
+### Task 2.1: Server Identity Module
+- **[NEW]** `server/telemetry_agent/server_identity.py` — UUID generation, persistence, hardware profile detection, registration
+
+### Task 2.2: Update MQTT Topic Hierarchy
+- **[MODIFY]** `server/telemetry_agent/mqtt_publisher.py` — Publish to `server/<server_id>/telemetry` instead of `server/telemetry`. Include `server_id` in payload.
+- **[MODIFY]** `edge/mqtt_handler.py` — Subscribe to `server/+/telemetry` (wildcard). Extract `server_id` from topic. Pass it to callback.
+- **[MODIFY]** `edge/main.py` — Track per-server state (one `current_state` dict per `server_id`). Update dashboard to show server selector.
+
+### Task 2.3: Edge SQLite Cache
+- **[NEW]** `edge/local_store.py` — SQLite ring buffer. Write incoming telemetry. Auto-purge after 24 hours. Query for recent data.
+
+## Milestone 3: Cloud Data Ingestion & InfluxDB (Day 2)
+
+### Task 3.1: Cloud Ingest API
+- **[NEW]** `server/deep_analysis/ingest_api.py` — FastAPI endpoint `/api/ingest`. Receives telemetry + predictions from edge. Writes to InfluxDB. Tags with `server_id` and `data_mode`.
+- Alternatively, can be added as new endpoints in the existing `inference_server.py`.
+
+### Task 3.2: InfluxDB Writer Module
+- **[NEW]** `server/deep_analysis/influx_writer.py` — Wraps the InfluxDB 2.x Python client. Handles batch writes, retry, and bucket routing (`telemetry_production` vs `telemetry_demo`).
+
+### Task 3.3: Edge → Cloud Forwarding
+- **[MODIFY]** `edge/main.py` — After inference, POST processed telemetry + predictions to cloud `/api/ingest`. Use async `httpx` with retry.
+
+### Task 3.4: Server & Model Registry
+- **[NEW]** `server/deep_analysis/model_registry.py` — SQLite-backed registry. CRUD operations for servers, models, and retraining logs.
+
+## Milestone 4: Continuous Learning Pipeline (Day 3)
+
+### Task 4.1: Retrain Trigger Manager
+- **[NEW]** `server/training/retrain_manager.py` — Background scheduler (APScheduler or simple `threading.Timer`). Checks InfluxDB data accumulation per server. Triggers retraining when thresholds met.
+
+### Task 4.2: Transfer Learning Trainer
+- **[NEW]** `server/training/train_adapter.py` — Loads base model, freezes conv layers, queries InfluxDB for server-specific data, fine-tunes adapter layers, saves adapter + scaler, quantizes to INT8.
+
+### Task 4.3: Self-Supervised Labeling Engine
+- **[NEW]** `server/training/auto_labeler.py` — Applies threshold-based rules to raw telemetry to generate class labels and TTF estimates for retraining.
+
+### Task 4.4: Wire LSTM-AE into Cloud Inference (BUG-N6)
+- **[MODIFY]** `server/deep_analysis/inference_server.py` — Load LSTM-AE, maintain a sliding window buffer per server, run anomaly detection on offloaded data.
+
+## Milestone 5: Deployment & Hot-Swap (Day 3-4)
+
+### Task 5.1: Model Deployer (Cloud → Edge)
+- **[NEW]** `server/deployment/deploy_model.py` — SFTP module that pushes new TFLite models + scalers to RPi4. Generates deploy manifest.
+
+### Task 5.2: Edge Model Hot-Swap
+- **[MODIFY]** `edge/edge_inference.py` — Add `reload_model()` method. Support per-server model dictionary. File-system poll for new models.
+
+### Task 5.3: Multi-Server Dashboard
+- **[MODIFY]** `dashboard/index.html` + `dashboard/assets/app.js` — Add server selector dropdown. Show per-server health cards. Model version badge.
+- **[MODIFY]** `edge/api_server.py` — Serve per-server state via `/api/state?server_id=<UUID>`.
+
+## Milestone 6: Testing & Documentation (Day 4)
+
+### Task 6.1: Integration Tests
+- **[MODIFY]** `tests/test_apis_end_to_end.py` — Add tests for: multi-tenant ingest, retrain trigger, model hot-swap, per-server state
+
+### Task 6.2: Update All Documentation
+- **[MODIFY]** `MEMORIES.md` — Add Phase D tasks
+- **[MODIFY]** `PROJECT_SUMMARY.md` — Update status
+- **[MODIFY]** `docs/AGENT_HANDOFF.md` — Add multi-tenant and continuous learning sections
+- **[NEW]** `docs/multi_tenant_guide.md` — Operational guide for adding new servers
+
+---
+
+# Open Questions for User
 
 > [!IMPORTANT]
-> Raw sensor values aren't enough. The **rate of change** (Δ-features) and **cross-sensor correlations** are far more predictive than snapshots. This is a critical AI/ML engineering step.
-
-### 7.1 Engineered Features (inspired by Paper 2)
-
-| # | Feature Name | Formula / Description | Why It Matters |
-|---|-------------|----------------------|----------------|
-| 1 | `cpu_temp` | Raw CPU package temperature | Baseline thermal state |
-| 2 | `cpu_load` | Raw CPU load % | Workload context |
-| 3 | `cpu_thermal_ramp` | `(temp[t] - temp[t-5]) / 5` (°C/sec) | **Cooling system health** — rising ramp = failing cooling |
-| 4 | `cpu_ambient_delta` | `cpu_temp - ambient_temp` | Contextual: 80°C in 20°C room ≠ 80°C in 35°C room |
-| 5 | `gpu_temp` | Raw GPU temperature | Baseline |
-| 6 | `gpu_power_draw` | Raw power in watts | Workload context |
-| 7 | `gpu_thermal_ramp` | Same as CPU version | GPU cooling degradation |
-| 8 | `gpu_power_efficiency` | `gpu_utilization / gpu_power_draw` | Declining efficiency = degradation |
-| 9 | `gpu_ecc_rate` | `ecc_errors / time_window` | **Most predictive GPU feature** — rate matters more than count |
-| 10 | `hdd_smart5_delta_7d` | Rate of change of reallocated sectors over 7 days | Accelerating sector failures |
-| 11 | `hdd_smart187_delta_7d` | Rate of change of uncorrectable errors | Error acceleration |
-| 12 | `hdd_smart197_current` | Current pending sectors (raw) | Immediate risk indicator |
-| 13 | `hdd_health_index` | Weighted composite of SMART 5,187,188,197,198 | Single health score for HDD |
-| 14 | `psu_voltage_3v3_dev` | `abs(voltage_3v3 - 3.3) / 3.3 × 100` | % deviation from nominal — should be <5% |
-| 15 | `psu_voltage_12v_dev` | Same for 12V rail | 12V rail powers CPU/GPU — critical |
-| 16 | `psu_voltage_stability` | `std(voltage_12v, window=60s)` | High variance = capacitor aging |
-| 17 | `fan_rpm_deviation` | `(actual_rpm - expected_rpm) / expected_rpm` | Bearing wear detection |
-| 18 | `fan_acoustic_rms` | RMS of acoustic sensor signal | Abnormal noise = mechanical failure |
-| 19 | `fan_acoustic_kurtosis` | Kurtosis of acoustic FFT | Impulsive noise pattern = bearing defect |
-| 20 | `ram_page_fault_rate` | Page faults per second | Memory pressure indicator |
-| 21 | `ram_ecc_rate` | ECC correctable error rate | Memory cell degradation |
-| 22 | `vibration_rms` | `sqrt(x² + y² + z²)` from ADXL345 | General mechanical health |
-| 23 | `vibration_kurtosis` | Kurtosis of vibration signal | Detects impulsive faults |
-| 24 | `vibration_peak_freq` | Dominant frequency from FFT | Bearing fault frequency signature |
-| 25 | `ambient_temp` | From DHT22 | Environmental context |
-| 26 | `humidity` | From DHT22 | Corrosion risk |
-| 27 | `system_uptime_hours` | Total hours since last reboot | Aging/fatigue factor |
-| 28 | `overall_health_index` | Weighted fusion of all component health scores | Single-number system health |
-
----
-
-## 8. RPi4 Role — Edge Deployment Strategy
-
-### 8.1 Why RPi4 (not just software on the server)?
-
-| Reason | Explanation |
-|--------|-------------|
-| **Independent watchdog** | If the server crashes, the RPi4 still monitors it and can alert you |
-| **External sensor integration** | GPIO/I2C/SPI for physical sensors — server doesn't have this |
-| **Edge AI demonstration** | Shows model optimization (quantization, pruning) — core to your AI curriculum |
-| **Low power, always-on** | RPi4 draws ~5W vs. server's 150W+ — can monitor 24/7 |
-| **Paper alignment** | Both Paper 1 and Paper 2 use edge devices — this is your project's domain |
-
-### 8.2 RPi4 Software Stack
-
-```
-Raspberry Pi 4 (Raspbian OS)
-├── sensor_collector.py        # Reads DHT22, ADXL345, MAX4466
-├── mqtt_subscriber.py         # Receives server telemetry via MQTT
-├── feature_engine.py          # Computes 28 engineered features
-├── edge_inference.py          # Runs TFLite INT8 model + Isolation Forest
-├── confidence_router.py       # Decides: local decision vs. offload to server
-├── alert_manager.py           # Sends alerts (email/Telegram/buzzer)
-├── api_server.py              # FastAPI on port 8080 (dashboard backend)
-└── models/
-    ├── classifier_int8.tflite # Quantized fault classifier (~1.3 MB)
-    ├── ttf_lite.tflite        # Lightweight TTF estimator
-    └── iso_forest.pkl         # Isolation Forest for PSU/Fan anomaly
-```
-
-### 8.3 Model Optimization Pipeline (Server → Edge)
-
-```mermaid
-flowchart LR
-    A["Train Full Model<br/>on Server GPU<br/>(FP32, ~5MB)"] --> B["Post-Training<br/>Quantization<br/>(FP32 → INT8)"]
-    B --> C["Pruning<br/>(Remove 25-30%<br/>low-weight params)"]
-    C --> D["Convert to<br/>TFLite<br/>(~1.3MB)"]
-    D --> E["Deploy to RPi4<br/>via SCP/MQTT OTA"]
-    E --> F["Benchmark on RPi4<br/>Target: <50ms latency"]
-```
-
----
-
-## 9. Communication Architecture
-
-### 9.1 MQTT Topic Structure
-
-```
-server/
-├── telemetry/          # Server → RPi4 (every 5s): full sensor JSON
-├── smart/              # Server → RPi4 (every 60s): SMART dump
-├── alerts/             # RPi4 → Server: fault alerts
-├── predictions/        # RPi4 → Server: edge predictions with confidence
-├── offload/request/    # RPi4 → Server: uncertain cases for deep analysis
-├── offload/response/   # Server → RPi4: deep analysis results
-└── model/update/       # Server → RPi4: OTA model updates
-```
-
-### 9.2 Data Flow Timing
-
-| Event | Frequency | Direction | Payload Size |
-|-------|-----------|-----------|-------------|
-| Software telemetry | Every 5 seconds | Server → RPi4 | ~1 KB JSON |
-| SMART data | Every 60 seconds | Server → RPi4 | ~2 KB JSON |
-| Edge prediction | Every 5 seconds | RPi4 (local) | — |
-| Offload request | ~10-15% of predictions | RPi4 → Server | ~500 B |
-| Deep analysis response | Per offload request | Server → RPi4 | ~2 KB |
-| Model update (OTA) | Weekly / on-demand | Server → RPi4 | ~1.3 MB |
-
----
-
-## 10. Dashboard & Visualization
-
-### 10.1 Dashboard Components
-
-The dashboard will be served by the RPi4's FastAPI backend and accessible from any browser:
-
-| Panel | Content | Update Frequency |
-|-------|---------|-----------------|
-| **System Health Overview** | Overall health index (0-100%) with color gradient | Every 5s |
-| **Component Cards** | Per-component health (CPU, GPU, HDD, PSU, RAM, Fans) with mini TTF countdown | Every 5s |
-| **TTF Timeline** | Time-to-failure estimates for each component, displayed as countdown bars | Every 30s |
-| **Anomaly Log** | Scrolling list of detected anomalies with timestamps and severity | On event |
-| **Sensor Trends** | Line charts of key metrics (temperature, voltage, RPM) over time | Every 5s |
-| **SHAP Explanations** | When server deep analysis runs: "Why was this flagged?" with feature importance | On offload |
-| **Alert History** | Historical record of all alerts and maintenance actions | On event |
-
-### 10.2 Alert Levels
-
-| Level | Condition | Action |
-|-------|-----------|--------|
-| 🟢 **HEALTHY** | All TTF > 30 days, no anomalies | Log only |
-| 🟡 **WARNING** | Any TTF < 30 days OR anomaly score > 0.6 | Dashboard highlight + email |
-| 🟠 **CRITICAL** | Any TTF < 7 days OR anomaly score > 0.8 | Buzzer + Telegram + email |
-| 🔴 **EMERGENCY** | Any TTF < 24 hours OR system instability detected | Audible alarm + SMS + auto-log |
-
----
-
-## 11. Project Directory Structure
-
-```
-Predictive maintenance for Server/
-├── MEMORIES.md
-├── PROJECT_SUMMARY.md
-├── README.md
-│
-├── docs/
-│   ├── architecture_diagram.png
-│   ├── system_design.md
-│   └── evaluation_results.md
-│
-├── server/                          # Runs on your laptop (RTX 4060)
-│   ├── telemetry_agent/
-│   │   ├── collector.py             # psutil + nvidia-smi + LibreHWMon + pySMART
-│   │   ├── mqtt_publisher.py        # Publishes telemetry to MQTT broker
-│   │   └── smart_reader.py          # SMART data extraction
-│   │
-│   ├── training/
-│   │   ├── train_classifier.py      # 1D-CNN multi-task model (fault + TTF)
-│   │   ├── train_lstm_ae.py         # LSTM-Autoencoder anomaly detector
-│   │   ├── train_xgboost_hdd.py     # XGBoost TTF for HDD (Backblaze)
-│   │   ├── train_iso_forest.py      # Isolation Forest for PSU/Fan
-│   │   ├── feature_engineering.py   # Compute Δ-features, rolling stats
-│   │   ├── data_loader.py           # Load Backblaze, NASA, AI4I, custom
-│   │   └── asymmetric_loss.py       # Custom loss function (Paper 2)
-│   │
-│   ├── deep_analysis/
-│   │   ├── inference_server.py      # FastAPI on server for deep predictions
-│   │   ├── shap_explainer.py        # SHAP feature importance
-│   │   └── ttf_regression.py        # Full-precision TTF estimation
-│   │
-│   ├── optimization/
-│   │   ├── quantize_model.py        # FP32 → INT8 conversion
-│   │   ├── prune_model.py           # Weight pruning
-│   │   └── export_tflite.py         # Export to TFLite for RPi4
-│   │
-│   └── models/                      # Trained model artifacts
-│       ├── classifier_fp32.h5
-│       ├── classifier_int8.tflite
-│       ├── lstm_ae.h5
-│       ├── xgboost_hdd.pkl
-│       └── iso_forest.pkl
-│
-├── edge/                            # Runs on Raspberry Pi 4
-│   ├── sensor_collector.py          # GPIO: DHT22, ADXL345, MAX4466
-│   ├── mqtt_handler.py              # Subscribe server telemetry + publish alerts
-│   ├── feature_engine.py            # Real-time feature computation
-│   ├── edge_inference.py            # TFLite inference + Isolation Forest
-│   ├── confidence_router.py         # Offload logic (confidence < 0.85 → server)
-│   ├── ttf_estimator.py             # Lightweight TTF computation
-│   ├── alert_manager.py             # Email/Telegram/buzzer alerts
-│   ├── api_server.py                # FastAPI dashboard backend
-│   └── models/                      # Edge model artifacts
-│       ├── classifier_int8.tflite
-│       ├── ttf_lite.tflite
-│       └── iso_forest.pkl
-│
-├── dashboard/                       # Web dashboard (HTML/CSS/JS)
-│   ├── index.html
-│   ├── style.css
-│   ├── app.js
-│   └── assets/
-│
-├── data/
-│   ├── backblaze/                   # Backblaze SMART CSVs
-│   ├── nasa_cmapss/                 # NASA C-MAPSS for TTF pretraining
-│   ├── ai4i_2020/                   # AI4I synthetic maintenance data
-│   ├── custom_telemetry/            # Your collected server telemetry
-│   └── processed/                   # Preprocessed + feature-engineered data
-│
-├── notebooks/                       # Jupyter notebooks for EDA & experiments
-│   ├── 01_eda_backblaze.ipynb
-│   ├── 02_eda_custom_telemetry.ipynb
-│   ├── 03_model_comparison.ipynb
-│   ├── 04_ttf_analysis.ipynb
-│   └── 05_edge_benchmarks.ipynb
-│
-├── tests/
-│   ├── test_telemetry_agent.py
-│   ├── test_feature_engine.py
-│   ├── test_edge_inference.py
-│   └── test_mqtt_pipeline.py
-│
-├── requirements_server.txt
-├── requirements_edge.txt
-└── docker-compose.yml               # Optional: MQTT broker + InfluxDB
-```
-
----
-
-## 12. Implementation Phases & Timeline
-
-### Phase 0: Setup & Data Collection (Week 1-2)
-- [ ] Set up MQTT broker (Mosquitto) on RPi4 or server
-- [ ] Build telemetry agent on server (psutil, nvidia-smi, LibreHWMon, pySMART)
-- [ ] Wire external sensors to RPi4 (DHT22, ADXL345, MAX4466)
-- [ ] Start collecting telemetry data continuously (need 2+ weeks of "healthy" data)
-- [ ] Download Backblaze Q1 2023, NASA C-MAPSS, AI4I 2020 datasets
-
-### Phase 1: Data Preparation & Feature Engineering (Week 2-3)
-- [ ] Build TTF labels for Backblaze data
-- [ ] Implement feature engineering pipeline (28 features)
-- [ ] EDA notebooks for each dataset
-- [ ] Preprocessing: normalization, denoising, segmentation
-- [ ] Handle class imbalance (SMOTE / class weighting)
-
-### Phase 2: Model Training (Week 3-5)
-- [ ] Train 1D-CNN multi-task model (classifier + TTF head) on server GPU
-- [ ] Train LSTM-Autoencoder on "healthy" telemetry
-- [ ] Train XGBoost HDD TTF model on Backblaze
-- [ ] Train Isolation Forest on PSU/Fan data
-- [ ] Cross-validate and select best hyperparameters
-- [ ] Implement asymmetric loss function for TTF
-
-### Phase 3: Edge Optimization & Deployment (Week 5-6)
-- [ ] Quantize 1D-CNN to INT8 TFLite
-- [ ] Prune model weights
-- [ ] Benchmark on RPi4 (target: <50ms latency)
-- [ ] Deploy edge models to RPi4
-- [ ] Implement confidence-aware routing
-
-### Phase 4: System Integration (Week 6-7)
-- [ ] End-to-end MQTT pipeline: server → RPi4 → prediction → alert
-- [ ] Implement offloading logic (uncertain cases → server GPU)
-- [ ] Build dashboard (web UI)
-- [ ] Set up alert system (email/Telegram)
-- [ ] Implement SHAP explainability on server side
-
-### Phase 5: Evaluation & Documentation (Week 7-8)
-- [ ] Evaluate classification accuracy, precision, recall, F1
-- [ ] Evaluate TTF regression (MAE, RMSE)
-- [ ] Compare edge vs. server accuracy and latency
-- [ ] Bandwidth reduction measurement
-- [ ] Write project report
-- [ ] Prepare demo
-
----
-
-## 13. Expected Results (Target Metrics)
-
-| Metric | Target | Paper 1 Baseline | Paper 2 Baseline |
-|--------|--------|-------------------|-------------------|
-| Fault Classification Accuracy (Server FP32) | > 95% | 97.6% (cloud) | 97.3% |
-| Fault Classification Accuracy (Edge INT8) | > 92% | 94.7% (edge) | ~93% |
-| TTF MAE (Server) | < 0.05 normalized | N/A | 0.0332 |
-| TTF MAE (Edge) | < 0.08 normalized | N/A | 0.0451 |
-| Edge Inference Latency | < 50 ms | 30 ms | 42.3 ms |
-| Server Inference Latency | < 200 ms | 350 ms | ~90 ms |
-| Bandwidth Reduction (edge vs cloud-only) | > 70% | 71-72% | ~85-92% |
-| Model Size (Edge) | < 2 MB | 1.3 MB | ~1 MB |
-
----
-
-## 14. Bill of Materials (Hardware)
-
-| Item | Quantity | Estimated Cost (INR) | Purpose |
-|------|----------|---------------------|---------|
-| Raspberry Pi 4 (4GB) | 1 | Already owned | Edge compute device |
-| Laptop with RTX 4060 | 1 | Already owned | Server / GPU training |
-| DHT22 Sensor | 1 | ₹150-200 | Ambient temperature + humidity |
-| ADXL345 Accelerometer | 1 | ₹200-350 | Vibration detection |
-| MAX4466 Electret Mic | 1 | ₹150-250 | Acoustic monitoring |
-| MCP3008 ADC (SPI) | 1 | ₹100-150 | Analog-to-digital for MAX4466 |
-| Jumper wires + Breadboard | 1 set | ₹100-200 | Wiring |
-| MicroSD 32GB (RPi4) | 1 | ₹300-400 | RPi4 storage |
-| **Total Additional** | | **₹1000-1550** | |
-
----
-
-## User Review Required
+> **Q1: Patient Server Hardware** — Questions Q21-Q25 in MEMORIES.md are still marked ❌ BLOCKING. What hardware will the patient server be? This affects the telemetry collector implementation and which SMART/GPU features are available.
 
 > [!IMPORTANT]
-> **Network Setup:** The RPi4 and your laptop need to be on the same local network (WiFi/Ethernet) for MQTT communication. Is your home/lab network setup suitable for this? Do you have a router where both devices can connect?
-
-> [!IMPORTANT]
-> **RPi4 Model:** Do you have a 4GB or 8GB RPi4? The 8GB model gives more headroom for running the TFLite models alongside the sensor collection and API server.
+> **Q2: Number of Patient Servers for Demo** — For the B.Tech demo, will you have 1 or 2+ patient servers? This affects whether multi-tenant is essential for demo or can be shown as "architecture ready" with a single server.
 
 > [!WARNING]
-> **External Sensors:** The ADXL345 and MAX4466 need to be physically mounted near the server hardware to detect vibration and acoustic anomalies. For the demo, you can place the RPi4 near/on top of the laptop. If purchasing sensors is an issue, the system can work with software-only telemetry (reduced feature set, ~20 features instead of 28).
-
-## Open Questions
+> **Q3: InfluxDB Already Deployed?** — `LOQ_Server_Stack/InfluxDB/` exists and the `.env` has a token. Is InfluxDB currently running on the LOQ? We need to verify bucket creation and token validity before writing the integration.
 
 > [!IMPORTANT]
-> 1. **Do you already have the external sensors (DHT22, ADXL345, MAX4466)?** If not, should we design a software-only version first and add sensors later?
-> 2. **What OS is on your RPi4?** Raspbian/Raspberry Pi OS? This affects the sensor library choices.
-> 3. **Do you want the dashboard on the RPi4 or the laptop?** RPi4 makes it a true "edge dashboard" but the laptop gives a richer UI experience.
-> 4. **Timeline:** How many weeks do you have before submission? This affects which phases to prioritize.
-> 5. **Do you want a Grafana-based dashboard (easier, professional look) or a custom HTML/JS dashboard (more code to show, more "your own work")?**
+> **Q4: Retraining Compute Budget** — Transfer learning fine-tuning will use the RTX 4060. Should retraining be triggered automatically in the background, or manually by the user? Auto-retraining while the inference server is running may cause GPU memory contention.
 
-## Verification Plan
+> [!NOTE]
+> **Q5: Deployment Priority** — Would you like me to implement all 3 phases in order, or would you prefer to prioritize Phase 1 bug fixes + Phase 3 retrain pipeline (since the model bugs are the most critical), and defer the full multi-tenant InfluxDB storage to later?
 
-### Automated Tests
-- Unit tests for feature engineering pipeline
-- Integration test: telemetry → MQTT → edge inference → alert
-- Model accuracy benchmarks (comparison table: edge vs. server)
-- Latency benchmarks on RPi4
+---
 
-### Manual Verification
-- Run stress tests on server (Prime95 for CPU, FurMark for GPU) to validate thermal predictions
-- Simulate HDD degradation by feeding historical Backblaze failure sequences
-- Verify TTF countdown accuracy against known degradation patterns
-- Demo the full pipeline: data collection → edge prediction → server offload → dashboard → alert
+# Verification Plan
+
+## Automated Tests
+
+```bash
+# 1. Feature schema consistency test
+python -m pytest tests/test_feature_schema.py -v
+
+# 2. Multi-tenant MQTT routing test
+python -m pytest tests/test_mqtt_multitenant.py -v
+
+# 3. InfluxDB write/read test
+python -m pytest tests/test_influx_integration.py -v
+
+# 4. Retrain trigger test (mock InfluxDB)
+python -m pytest tests/test_retrain_trigger.py -v
+
+# 5. Model hot-swap test
+python -m pytest tests/test_model_hotswap.py -v
+
+# 6. End-to-end (existing + extended)
+python tests/test_apis_end_to_end.py --inference-url http://127.0.0.1:8000/api/offload
+```
+
+## Manual Verification
+
+1. **Feature order match**: After retrain, print feature names from training and edge, confirm they match exactly
+2. **Scaler consistency**: Verify scaler means/stds saved during training match what's loaded at edge
+3. **Multi-tenant MQTT**: Run 2 dummy simulators with different server_ids, verify edge tracks them separately
+4. **InfluxDB persistence**: Restart LOQ, query InfluxDB, confirm historical data survives
+5. **Hot-swap**: Deploy a new model to RPi4 while inference is running, verify it picks up the new model without restart
+6. **Data leakage check**: Compare val accuracy with proper train-only scaler vs old full-dataset scaler
+
+---
+
+> [!CAUTION]
+> **DO NOT BEGIN IMPLEMENTATION** until the user reviews this plan, answers the open questions, and explicitly says "Approved".  
+> This plan is designed to be **self-contained** — any agent on any model (Claude, Gemini, etc.) on any device (IdeaPad, LOQ, or any new laptop) can read this document, understand the full context, and begin implementation from any milestone.
+
+---
+
+*Plan authored by @claude-architect on 2026-08-09. All source files audited: 48+ files, 100% coverage.*

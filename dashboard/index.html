@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge AI Operator & Hardware Diagnostic Console</title>
+    <meta name="description" content="Production-ready predictive maintenance dashboard for server hardware monitoring via Edge AI (RPi4 Doctor) and Cloud Hospital (LOQ RTX 4060).">
+    <link rel="stylesheet" href="assets/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for real-time telemetry graphs, trends, and micro-sparklines -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div id="dashboard-app" class="dashboard-app">
+
+        <!-- ─── Top Navigation Bar ─── -->
+        <nav class="top-bar">
+            <div class="top-bar-left">
+                <div class="logo-mark">
+                    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+                        <circle cx="14" cy="14" r="12" stroke="url(#logoGrad)" stroke-width="2.5"/>
+                        <path d="M9 14l3 3 7-7" stroke="url(#logoGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="28" y2="28">
+                                <stop stop-color="#38bdf8"/>
+                                <stop offset="1" stop-color="#818cf8"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>Edge AI Diagnostics</h1>
+                    <div class="top-tags">
+                        <span class="badge badge-edge">RPi4 Doctor (Edge)</span>
+                        <span class="badge badge-mesh">Tailscale Mesh</span>
+                        <span class="badge badge-prod" id="systemModeBadge">PRODUCTION MODE</span>
+                        <span class="badge badge-mesh" id="hardwareProfileBadge">💻 Consumer Device / PC</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Mode Switcher: Executive Summary vs Deep Engineering View -->
+            <div class="view-mode-toggle" id="viewModeToggle">
+                <button class="btn-mode active" id="btnModeSummary" data-mode="summary">
+                    <span class="mode-icon">🌟</span> Simple Overview
+                </button>
+                <button class="btn-mode" id="btnModeComplex" data-mode="complex">
+                    <span class="mode-icon">🔬</span> Deep Diagnostics &amp; Sensor Matrix
+                </button>
+            </div>
+
+            <div class="top-bar-right">
+                <div class="aggregate-health" id="aggregateHealth">
+                    <span class="agg-label">Fleet Health</span>
+                    <span class="agg-value" id="aggHealthValue">100%</span>
+                </div>
+                <div class="server-count-badge" id="serverCountBadge">
+                    <span class="sc-dot"></span>
+                    <span id="serverCountText">0 servers</span>
+                </div>
+                <button class="btn-chat-toggle" id="btnToggleChat" title="Toggle AI Diagnostic Assistant">
+                    <span class="chat-icon-sparkle">🤖</span>
+                    <span class="chat-toggle-text">AI Assistant</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- ─── Complex View Secondary Navigation Bar (Visible in Complex Mode) ─── -->
+        <nav class="sub-nav-bar" id="subNavTabs" style="display: none;">
+            <div class="sub-nav-inner">
+                <button class="nav-tab active" data-tab="sensors-view">
+                    <span class="tab-icon">🎛️</span> Sensor Audit Matrix
+                </button>
+                <button class="nav-tab" data-tab="schema36-view">
+                    <span class="tab-icon">📊</span> 36-Feature Harmonized Schema
+                </button>
+                <button class="nav-tab" data-tab="hardware-view">
+                    <span class="tab-icon">🔧</span> Hardware Detail
+                </button>
+                <button class="nav-tab" data-tab="models-view">
+                    <span class="tab-icon">🧠</span> 10-Model AI Portfolio
+                </button>
+                <button class="nav-tab" data-tab="trends-view">
+                    <span class="tab-icon">📈</span> Telemetry Trends
+                </button>
+                <button class="nav-tab" data-tab="xai-view">
+                    <span class="tab-icon">🔍</span> Root Cause & XAI
+                </button>
+                <button class="nav-tab" data-tab="database-view">
+                    <span class="tab-icon">💾</span> Database & History
+                </button>
+                <button class="nav-tab" data-tab="platform-view">
+                    <span class="tab-icon">🖥️</span> Platform Health
+                </button>
+                <button class="nav-tab" data-tab="cloud-view">
+                    <span class="tab-icon">☁️</span> Cloud Fusion
+                </button>
+            </div>
+        </nav>
+
+        <!-- ─── Main Application Body ─── -->
+        <div class="main-layout" id="mainLayout">
+
+            <!-- ─── Left Sidebar: Server Fleet ─── -->
+            <aside class="server-sidebar" id="serverSidebar">
+                <div class="sidebar-header">
+                    <h2>Monitored Fleet</h2>
+                    <div class="sidebar-search">
+                        <input type="text" id="serverSearchInput" placeholder="Filter servers…">
+                    </div>
+                </div>
+                <ul class="server-list" id="serverList">
+                    <li class="server-empty" id="noServersMsg">
+                        <div class="spinner-sm"></div>
+                        <span>Waiting for MQTT telemetry…</span>
+                    </li>
+                </ul>
+                <div class="sidebar-footer">
+                    <div class="sse-status" id="sseStatusIndicator">
+                        <span class="status-indicator-dot"></span>
+                        <span id="sseStatusText">Live Stream (SSE)</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- ─── Center Main Content Area ─── -->
+            <main class="content-panel" id="contentPanel">
+
+                <!-- Shown when no server is registered yet -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><rect x="8" y="12" width="48" height="32" rx="4" stroke="#475569" stroke-width="2"/><line x1="16" y1="52" x2="48" y2="52" stroke="#475569" stroke-width="2" stroke-linecap="round"/><line x1="32" y1="44" x2="32" y2="52" stroke="#475569" stroke-width="2"/><circle cx="32" cy="28" r="6" stroke="#38bdf8" stroke-width="2"/><path d="M29 28l2 2 4-4" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <h2>Waiting for Server Telemetry</h2>
+                    <p>Launch the telemetry agent on the monitored server or run <code>START_PATIENT_LOQ.bat</code> to stream live diagnostics data.</p>
+                </div>
+
+                <!-- Server Content Wrapper (Active when server is selected) -->
+                <div class="server-content-wrapper" id="serverContentWrapper" style="display:none;">
+
+                    <!-- Server Header Strip (Always visible for selected server) -->
+                    <div class="server-header-strip">
+                        <div class="sh-left">
+                            <h2 id="detailServerName">Production-01</h2>
+                            <span class="server-uuid-pill" id="detailServerId">UUID: —</span>
+                            <span class="server-data-mode" id="detailDataMode">PRODUCTION</span>
+                            <span class="server-arch-pill" id="detailArchPill">AMD64 / PCIe 4.0</span>
+                        </div>
+                        <div class="sh-right">
+                            <div class="sh-pill" id="inferenceLocationPill">
+                                <span class="sh-dot"></span>
+                                <span id="inferenceLocationText">RPi4 Edge INT8 • 18.5ms</span>
+                            </div>
+                            <div class="sh-pill-meta">
+                                <span id="detailFreshnessText">Fresh: 0.8s ago</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════════════════
+                         SECTION A: EXECUTIVE SUMMARY VIEW (Primary Operator Console)
+                         ═══════════════════════════════════════════════════════════ -->
+                    <div class="view-pane-container" id="summaryViewContainer">
+
+                        <!-- Adaptive Baseline Calibration Banner -->
+                        <div class="calibration-banner" id="calibrationBanner">
+                            <div class="cal-icon">📊</div>
+                            <div class="cal-text">
+                                <strong id="calTitle">Adaptive Baseline Ingestion Active</strong>
+                                <span id="calSub">16,874 samples collected · 36 metrics tracked · Real-time Z-score monitoring</span>
+                            </div>
+                            <div class="cal-progress">
+                                <div class="cal-bar"><div class="cal-bar-fill" id="calBarFill" style="width:100%; background: var(--status-healthy);"></div></div>
+                                <span class="cal-pct" id="calPctText">100%</span>
+                            </div>
+                            <button class="cal-force-btn" id="calForceBtn" title="Force calibration with current data" style="display:none">⚡ Calibrate Now</button>
+                        </div>
+
+                        <!-- Per-Component Health Mini Bars -->
+                        <div class="component-health-bars" id="componentHealthBars" style="display:none"></div>
+
+                        <!-- Top KPI Ribbon -->
+                        <div class="kpi-grid">
+                            <!-- Circular Gauge Card -->
+                            <div class="kpi-card gauge-kpi-card">
+                                <div class="gauge-wrap">
+                                    <svg class="radial-gauge" viewBox="0 0 100 100">
+                                        <circle class="gauge-bg" cx="50" cy="50" r="42"/>
+                                        <circle class="gauge-fill" id="radialGaugeFill" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="0"/>
+                                    </svg>
+                                    <div class="gauge-center-text">
+                                        <span class="gauge-val" id="gaugeHealthVal">100%</span>
+                                        <span class="gauge-sub">Health</span>
+                                    </div>
+                                </div>
+                                <div class="kpi-info">
+                                    <span class="kpi-title">Condition</span>
+                                    <span class="kpi-status-badge healthy" id="gaugeHealthStatus">OPTIMAL</span>
+                                    <span class="kpi-sub-desc" id="gaugeHealthDesc">All physical subsystems nominal</span>
+                                </div>
+                            </div>
+
+                            <!-- AI Confidence Card -->
+                            <div class="kpi-card">
+                                <div class="kpi-head">
+                                    <span class="kpi-title">AI Confidence</span>
+                                    <span class="kpi-icon">🎯</span>
+                                </div>
+                                <div class="kpi-main-val" id="kpiConfidenceVal">98.5%</div>
+                                <div class="kpi-sub" id="kpiConfidenceSub">High Confidence (Local INT8)</div>
+                                <div class="mini-sparkline-wrap">
+                                    <canvas id="kpiConfidenceSparkline" height="28"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Time To Failure Card -->
+                            <div class="kpi-card">
+                                <div class="kpi-head">
+                                    <span class="kpi-title">Time to Failure (TTF)</span>
+                                    <span class="kpi-icon">⏳</span>
+                                </div>
+                                <div class="kpi-main-val" id="kpiTtfVal">&gt; 30 Days</div>
+                                <div class="kpi-sub" id="kpiTtfSub">Safe Operational Horizon</div>
+                                <div class="mini-sparkline-wrap">
+                                    <canvas id="kpiTtfSparkline" height="28"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Active Incidents Card -->
+                            <div class="kpi-card">
+                                <div class="kpi-head">
+                                    <span class="kpi-title">Active Alerts</span>
+                                    <span class="kpi-icon">🚨</span>
+                                </div>
+                                <div class="kpi-main-val" id="kpiAlertsVal">0 Active</div>
+                                <div class="kpi-sub" id="kpiAlertsSub">No critical anomalies</div>
+                                <div class="mini-sparkline-wrap">
+                                    <canvas id="kpiHealthSparkline" height="28"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6 Hardware Subsystems Grid -->
+                        <div class="section-title-wrap">
+                            <div class="stw-left">
+                                <h3>Hardware Subsystems Live Telemetry</h3>
+                                <span class="section-subtitle">Real-time sensor values, thermodynamic proxies &amp; AI degradation indicators</span>
+                            </div>
+                            <div class="stw-right">
+                                <button class="btn-text-action" onclick="switchToSensorMatrix()">View Full Sensor Matrix ➔</button>
+                            </div>
+                        </div>
+
+                        <div class="hardware-grid">
+                            <!-- CPU Card -->
+                            <div class="hw-card" data-comp="cpu" id="hwCardCpu">
+                                <div class="hw-card-header">
+                                    <div class="hw-title-group">
+                                        <span class="hw-icon">🔲</span>
+                                        <h4>CPU Package</h4>
+                                    </div>
+                                    <span class="hw-badge healthy" id="cpuBadge">HEALTHY</span>
+                                </div>
+                                <div class="hw-primary-val">
+                                    <span class="num" id="cpuTempNum">56.1</span>
+                                    <span class="unit">°C</span>
+                                    <span class="source-tag" id="cpuTempSourceTag">WMI DIODE</span>
+                                </div>
+                                <div class="hw-metrics-row">
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Load</span>
+                                        <span class="sm-val" id="cpuLoadVal">31.0%</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Freq</span>
+                                        <span class="sm-val" id="cpuFreqVal">3100 MHz</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">ΔT</span>
+                                        <span class="sm-val" id="cpuDeltaVal">+31.1°C</span>
+                                    </div>
+                                </div>
+                                <div class="hw-sparkline-box">
+                                    <canvas id="sparklineCpu" height="35"></canvas>
+                                </div>
+                                <div class="hw-card-footer">
+                                    <span class="hw-ttf" id="cpuTtf">TTF: &gt;30 Days</span>
+                                    <button class="btn-hw-inspect" onclick="switchTabAndInspect('cpu')">Inspect ➔</button>
+                                </div>
+                            </div>
+
+                            <!-- GPU Card -->
+                            <div class="hw-card" data-comp="gpu" id="hwCardGpu">
+                                <div class="hw-card-header">
+                                    <div class="hw-title-group">
+                                        <span class="hw-icon">🎮</span>
+                                        <h4>GPU Core</h4>
+                                    </div>
+                                    <span class="hw-badge healthy" id="gpuBadge">HEALTHY</span>
+                                </div>
+                                <div class="hw-primary-val">
+                                    <span class="num" id="gpuTempNum">50.0</span>
+                                    <span class="unit">°C</span>
+                                    <span class="source-tag">NVML LIVE</span>
+                                </div>
+                                <div class="hw-metrics-row">
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Util</span>
+                                        <span class="sm-val" id="gpuUtilVal">7.0%</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Power</span>
+                                        <span class="sm-val" id="gpuPowerVal">12.7 W</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">VRAM</span>
+                                        <span class="sm-val" id="gpuVramVal">1413 MB</span>
+                                    </div>
+                                </div>
+                                <div class="hw-sparkline-box">
+                                    <canvas id="sparklineGpu" height="35"></canvas>
+                                </div>
+                                <div class="hw-card-footer">
+                                    <span class="hw-ttf" id="gpuTtf">TTF: &gt;30 Days</span>
+                                    <button class="btn-hw-inspect" onclick="switchTabAndInspect('gpu')">Inspect ➔</button>
+                                </div>
+                            </div>
+
+                            <!-- HDD / SMART Card -->
+                            <div class="hw-card" data-comp="hdd" id="hwCardHdd">
+                                <div class="hw-card-header">
+                                    <div class="hw-title-group">
+                                        <span class="hw-icon">💽</span>
+                                        <h4>Storage (SSD &amp; HDD)</h4>
+                                    </div>
+                                    <span class="hw-badge healthy" id="hddBadge">HEALTHY</span>
+                                </div>
+                                <div class="hw-primary-val">
+                                    <span class="num" id="hddHealthNum">100</span>
+                                    <span class="unit">% SMART</span>
+                                    <span class="source-tag" id="hddDisksCountTag">3 VOLUMES</span>
+                                </div>
+                                <div class="hw-metrics-row">
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Temp</span>
+                                        <span class="sm-val" id="hddTempVal">35.0°C</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Realloc (S5)</span>
+                                        <span class="sm-val" id="hddSmart5Val">0</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Hours</span>
+                                        <span class="sm-val" id="hddHoursVal">5000h</span>
+                                    </div>
+                                </div>
+                                <div class="hw-sparkline-box">
+                                    <canvas id="sparklineHdd" height="35"></canvas>
+                                </div>
+                                <div class="hw-card-footer">
+                                    <span class="hw-ttf" id="hddTtf">TTF: &gt;30 Days</span>
+                                    <button class="btn-hw-inspect" onclick="switchTabAndInspect('hdd')">Inspect ➔</button>
+                                </div>
+                            </div>
+
+                            <!-- PSU Card -->
+                            <div class="hw-card" data-comp="psu" id="hwCardPsu">
+                                <div class="hw-card-header">
+                                    <div class="hw-title-group">
+                                        <span class="hw-icon">⚡</span>
+                                        <h4>PSU &amp; Power Rails</h4>
+                                    </div>
+                                    <span class="hw-badge healthy" id="psuBadge">NOMINAL</span>
+                                </div>
+                                <div class="hw-primary-val">
+                                    <span class="num" id="psuStatusNum">NOMINAL</span>
+                                    <span class="source-tag" id="psuBatterySummaryTag">BATTERY OK</span>
+                                </div>
+                                <div class="hw-metrics-row">
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">3.3V Dev</span>
+                                        <span class="sm-val" id="psu3v3Val">0.30%</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">12V Dev</span>
+                                        <span class="sm-val" id="psu12vVal">0.42%</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Stability (σ)</span>
+                                        <span class="sm-val" id="psuStabVal">0.050</span>
+                                    </div>
+                                </div>
+                                <div class="hw-sparkline-box">
+                                    <canvas id="sparklinePsu" height="35"></canvas>
+                                </div>
+                                <div class="hw-card-footer">
+                                    <span class="hw-ttf" id="psuTtf">TTF: &gt;30 Days</span>
+                                    <button class="btn-hw-inspect" onclick="switchTabAndInspect('psu')">Inspect ➔</button>
+                                </div>
+                            </div>
+
+                            <!-- RAM Card -->
+                            <div class="hw-card" data-comp="ram" id="hwCardRam">
+                                <div class="hw-card-header">
+                                    <div class="hw-title-group">
+                                        <span class="hw-icon">🧩</span>
+                                        <h4>System Memory</h4>
+                                    </div>
+                                    <span class="hw-badge healthy" id="ramBadge">HEALTHY</span>
+                                </div>
+                                <div class="hw-primary-val">
+                                    <span class="num" id="ramPercentNum">58.6</span>
+                                    <span class="unit">%</span>
+                                    <span class="source-tag">NON-ECC DDR5</span>
+                                </div>
+                                <div class="hw-metrics-row">
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Used</span>
+                                        <span class="sm-val" id="ramUsedVal">13.9 GB</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Total</span>
+                                        <span class="sm-val" id="ramTotalVal">23.7 GB</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Page Faults</span>
+                                        <span class="sm-val" id="ramFaultsVal">0/s</span>
+                                    </div>
+                                </div>
+                                <div class="hw-sparkline-box">
+                                    <canvas id="sparklineRam" height="35"></canvas>
+                                </div>
+                                <div class="hw-card-footer">
+                                    <span class="hw-ttf" id="ramTtf">TTF: &gt;30 Days</span>
+                                    <button class="btn-hw-inspect" onclick="switchTabAndInspect('ram')">Inspect ➔</button>
+                                </div>
+                            </div>
+
+                            <!-- Fans Card -->
+                            <div class="hw-card" data-comp="fans" id="hwCardFans">
+                                <div class="hw-card-header">
+                                    <div class="hw-title-group">
+                                        <span class="hw-icon">🌀</span>
+                                        <h4>Cooling &amp; Acoustics</h4>
+                                    </div>
+                                    <span class="hw-badge healthy" id="fansBadge">OPTIMAL</span>
+                                </div>
+                                <div class="hw-primary-val">
+                                    <span class="num" id="fanRpmNum">1450</span>
+                                    <span class="unit">RPM</span>
+                                    <span class="source-tag">ALSA + I2C ACTIVE</span>
+                                </div>
+                                <div class="hw-metrics-row">
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Deviation</span>
+                                        <span class="sm-val" id="fanDevVal">+3.3%</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Vibration</span>
+                                        <span class="sm-val" id="fanVibVal">0.020 g</span>
+                                    </div>
+                                    <div class="hw-sub-metric">
+                                        <span class="sm-lbl">Acoustic</span>
+                                        <span class="sm-val" id="fanAcousticVal">0.020 V</span>
+                                    </div>
+                                </div>
+                                <div class="hw-sparkline-box">
+                                    <canvas id="sparklineFans" height="35"></canvas>
+                                </div>
+                                <div class="hw-card-footer">
+                                    <span class="hw-ttf" id="fansTtf">TTF: &gt;30 Days</span>
+                                    <button class="btn-hw-inspect" onclick="switchTabAndInspect('fans')">Inspect ➔</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lower Summary: Recent Incidents + AI Diagnostic Advice -->
+                        <div class="summary-bottom-row">
+                            <div class="recent-incidents-panel">
+                                <div class="panel-head">
+                                    <h4>🚨 Live Anomaly Incident Stream</h4>
+                                    <span class="panel-tag">Real-Time Event Feed</span>
+                                </div>
+                                <ul class="incidents-list" id="simpleIncidentsList">
+                                    <li class="incident-item-empty">No active hardware anomalies detected for this server.</li>
+                                </ul>
+                            </div>
+
+                            <div class="ai-quick-panel">
+                                <div class="panel-head">
+                                    <h4>🤖 AI Maintenance Briefing</h4>
+                                    <span class="panel-tag">Ollama Qwen 3.5 4B RAG</span>
+                                </div>
+                                <div class="ai-quick-content" id="aiQuickBriefing">
+                                    <p>Hardware diagnostics are nominal. Real-time telemetry streams from Edge TFLite model are steady with healthy Time-To-Failure predictions across all 6 subsystems.</p>
+                                </div>
+                                <div class="ai-quick-actions">
+                                    <button class="btn-pill" onclick="sendQuickPrompt('Explain current hardware health and TTF risks.')">Explain Risks</button>
+                                    <button class="btn-pill" onclick="sendQuickPrompt('Generate recommended maintenance checklist.')">Maintenance Steps</button>
+                                    <button class="btn-pill" onclick="sendQuickPrompt('Analyze CPU and cooling performance.')">Cooling Audit</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div> <!-- End #summaryViewContainer -->
+
+                    <!-- ═══════════════════════════════════════════════════════════
+                         SECTION B: COMPLEX ENGINEERING DIAGNOSTICS VIEW
+                         ═══════════════════════════════════════════════════════════ -->
+                    <div class="view-pane-container" id="complexViewContainer" style="display:none;">
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 1: SENSOR RECOGNITION & TELEMETRY AUDIT MATRIX
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane active" id="pane-sensors-view">
+                            <div class="sensor-matrix-header glass-card">
+                                <div class="smh-left">
+                                    <h3>🎛️ Sensor Recognition &amp; Telemetry Audit Matrix</h3>
+                                    <p>Complete transparent hardware audit cataloging verified physical sensors, dynamic thermodynamic proxies, and unmonitored consumer architectural boundaries.</p>
+                                </div>
+                                <div class="smh-right">
+                                    <div class="sensor-filter-chips">
+                                        <button class="chip-filter active" data-filter="all">All Channels (<span id="countAllSensors">10</span>)</button>
+                                        <button class="chip-filter" data-filter="live">● Live Hardware (<span id="countLiveSensors">6</span>)</button>
+                                        <button class="chip-filter" data-filter="proxy">◐ Proxied / Modeled (<span id="countProxySensors">2</span>)</button>
+                                        <button class="chip-filter" data-filter="unsupported">⚠ Exclusions &amp; Non-ECC (<span id="countUnsupportedSensors">2</span>)</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="sensor-matrix-table-card glass-card">
+                                <div class="table-responsive">
+                                    <table class="data-table sensor-matrix-table" id="sensorMatrixTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Sensor Channel</th>
+                                                <th>Subsystem</th>
+                                                <th>Hardware Interface / Driver</th>
+                                                <th>Recognition Status</th>
+                                                <th>Live Telemetry Reading</th>
+                                                <th>Engineering Explanation &amp; Architecture Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sensorMatrixTableBody">
+                                            <!-- Dynamically populated by app.js with real telemetry -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 2: 36-FEATURE HARMONIZED ENTERPRISE SCHEMA GRID
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane" id="pane-schema36-view">
+                            <div class="schema36-header glass-card">
+                                <div class="s36-left">
+                                    <h3>📊 Unified 36-Feature Enterprise Telemetry Schema</h3>
+                                    <p>Standardized feature vector ingested across all 6 enterprise datasets (Backblaze, Alibaba DRAM/SSD/GPU, NASA C-MAPSS) with parallel binary missingness masks.</p>
+                                </div>
+                                <div class="s36-right">
+                                    <span class="badge badge-edge">Phase 5 Enterprise Schema</span>
+                                    <span class="badge badge-prod">Vector: (N, 36)</span>
+                                </div>
+                            </div>
+
+                            <div class="schema36-grid" id="schema36Grid">
+                                <!-- Populated dynamically by app.js -->
+                            </div>
+                        </section>
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 3: HARDWARE DETAIL (Per-Component Drill-Down)
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane" id="pane-hardware-view">
+                            <div class="hardware-detail-header">
+                                <h2>🔧 Multi-Instance Hardware Topology</h2>
+                                <p class="hw-sub">Per-instance monitoring: individual GPU cores, storage partition volumes, DIMM memory channels, and fan tachometers</p>
+                                <div class="hw-actions">
+                                    <button class="btn-retrain" id="btnRetrain" onclick="triggerRetrain()">⚙️ Retrain Models</button>
+                                    <span class="retrain-status" id="retrainStatus"></span>
+                                </div>
+                            </div>
+
+                            <div class="hw-grid" id="hwComponentGrid">
+                                <!-- Dynamically populated by app.js -->
+                                <div class="hw-placeholder">Waiting for multi-instance telemetry data...</div>
+                            </div>
+
+                            <!-- Baseline Stats Table -->
+                            <div class="baseline-card glass-card" id="baselineCard" style="display:none">
+                                <h3>📏 Adaptive Baselines (Learned Normal Distributions)</h3>
+                                <div class="baseline-stats" id="baselineStats"></div>
+                            </div>
+                        </section>
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 4: 10-MODEL AI PORTFOLIO & SURVIVAL ENGINE
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane" id="pane-models-view">
+                            <div class="portfolio-header glass-card">
+                                <h3>🧠 10-Model AI Portfolio &amp; Asymmetric Survival Engine</h3>
+                                <p>Comprehensive multi-tier intelligence combining edge sub-millisecond INT8 inferencing with cloud GPU deep structural models.</p>
+                            </div>
+
+                            <div class="models-portfolio-grid">
+                                <!-- Edge Tier Card -->
+                                <div class="portfolio-tier-card glass-card">
+                                    <div class="tier-card-head">
+                                        <div class="tch-title">
+                                            <span class="tier-badge edge">EDGE TIER (Doctor RPi4 ARM)</span>
+                                            <h4>Google LiteRT INT8 Quantized Engines</h4>
+                                        </div>
+                                        <span class="tier-speed">Sub-Millisecond Execution</span>
+                                    </div>
+                                    <div class="model-spec-list">
+                                        <div class="model-spec-item">
+                                            <div class="msi-top">
+                                                <span class="msi-name">1D-CNN Multi-Task Classifier + TTF</span>
+                                                <span class="msi-size">132.6 KB INT8</span>
+                                                <span class="msi-lat">0.160 ms</span>
+                                            </div>
+                                            <p class="msi-desc">7-class fault classification (Healthy, HDD, Thermal, PSU, Fan, RAM, GPU) + asymmetric TTF regression.</p>
+                                        </div>
+                                        <div class="model-spec-item">
+                                            <div class="msi-top">
+                                                <span class="msi-name">TCN Storage RUL Specialist</span>
+                                                <span class="msi-size">141.0 KB INT8</span>
+                                                <span class="msi-lat">0.547 ms</span>
+                                            </div>
+                                            <p class="msi-desc">Temporal Convolutional Network with dilated causal convolutions predicting drive remaining useful life.</p>
+                                        </div>
+                                        <div class="model-spec-item">
+                                            <div class="msi-top">
+                                                <span class="msi-name">Fan Bearing Cavitation CNN</span>
+                                                <span class="msi-size">27.2 KB INT8</span>
+                                                <span class="msi-lat">0.076 ms</span>
+                                            </div>
+                                            <p class="msi-desc">Physical vibration kurtosis + acoustic harmonic FFT pattern analysis for early motor bearing failure.</p>
+                                        </div>
+                                        <div class="model-spec-item">
+                                            <div class="msi-top">
+                                                <span class="msi-name">Isolation Forest Anomaly Filter</span>
+                                                <span class="msi-size">1020 KB</span>
+                                                <span class="msi-lat">0.420 ms</span>
+                                            </div>
+                                            <p class="msi-desc">Unsupervised tree-based outlier detector filtering anomalous multi-sensor spikes.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Cloud Tier Card -->
+                                <div class="portfolio-tier-card glass-card">
+                                    <div class="tier-card-head">
+                                        <div class="tch-title">
+                                            <span class="tier-badge cloud">CLOUD HOSPITAL (LOQ RTX 4060 CUDA)</span>
+                                            <h4>Deep Spatial-Temporal &amp; Generative Models</h4>
+                                        </div>
+                                        <span class="tier-speed">Full FP32 Precision</span>
+                                    </div>
+                                    <div class="model-spec-list">
+                                        <div class="model-spec-item">
+                                            <div class="msi-top">
+                                                <span class="msi-name">ST-GCN Spatial-Temporal Graph Attention</span>
+                                                <span class="msi-size">63.1 KB PyTorch</span>
+                                                <span class="msi-weight">Weight: 5%</span>
+                                            </div>
+                                            <p class="msi-desc">Graph neural network modeling cross-subsystem dependencies (e.g. CPU load causing thermal surge, propagating to fan cavitation).</p>
+                                        </div>
+                                        <div class="model-spec-item">
+                                            <div class="msi-top">
+                                                <span class="msi-name">MAD-GAN Multi-Agent Temporal Anomaly</span>
+                                                <span class="msi-size">1.2 MB PyTorch</span>
+                                                <span class="msi-weight">Weight: 5%</span>
+                                            </div>
+                                            <p class="msi-desc">Generative Adversarial Network evaluating telemetry distribution distance and reconstruction loss.</p>
+                                        </div>
+                                        <div class="model-spec-item">
+                                            <div class="msi-top">
+                                                <span class="msi-name">LSTM Autoencoder Sequence Detector</span>
+                                                <span class="msi-size">840 KB PyTorch</span>
+                                                <span class="msi-weight">Weight: 15%</span>
+                                            </div>
+                                            <p class="msi-desc">Unsupervised sequence reconstruction tracking cumulative deviation from healthy operations.</p>
+                                        </div>
+                                        <div class="model-spec-item">
+                                            <div class="msi-top">
+                                                <span class="msi-name">Ollama Qwen 3.5 4B Diagnostic RAG</span>
+                                                <span class="msi-size">3.4 GB VRAM</span>
+                                                <span class="msi-lat">Context: 4096</span>
+                                            </div>
+                                            <p class="msi-desc">Natural language diagnostic assistant answering hardware inquiries with live SHAP and telemetry grounding.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loss & Survival Equation Card -->
+                            <div class="survival-loss-card glass-card">
+                                <h4>📐 Asymmetric Survival Loss &amp; Weibull Hazard Engine</h4>
+                                <div class="survival-eq-grid">
+                                    <div class="seq-item">
+                                        <h5>Asymmetric TTF Penalty (Paper 2 &amp; Blueprint §5)</h5>
+                                        <code class="seq-code">L_asym = α * (y_pred - y_true)²  where  α = 5.0 if y_pred &gt; y_true else 1.0</code>
+                                        <p>Severely penalizes dangerous overestimation of remaining useful life 5x more heavily than conservative early inspection.</p>
+                                    </div>
+                                    <div class="seq-item">
+                                        <h5>Weibull Accelerated Failure Time (AFT) Loss</h5>
+                                        <code class="seq-code">S(t) = exp(-(t / λ)^β),  Hazard: h(t) = (β/λ) * (t/λ)^(β-1)</code>
+                                        <p>Full support for right-censored field hardware samples that have not yet failed in service.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Enterprise Training Datasets Portfolio Table -->
+                            <div class="training-datasets-card glass-card">
+                                <h4>📚 Enterprise Pretraining Datasets &amp; Training Samples Matrix</h4>
+                                <p class="sub">Comprehensive breakdown of all historical and benchmark datasets used in training the 10-model AI predictive maintenance portfolio.</p>
+                                <div class="table-responsive">
+                                    <table class="training-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Dataset Name</th>
+                                                <th>Subsystem Focus</th>
+                                                <th>Training Samples &amp; Size</th>
+                                                <th>Trained Model Target</th>
+                                                <th>Key Monitored Features</th>
+                                                <th>Failure Modes Covered</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><span class="badge-ds">Backblaze Drive Stats</span><br><small style="color:var(--text-muted)">Q1 2023 Real Fleet</small></td>
+                                                <td><strong style="color:var(--text-primary)">Storage (HDD &amp; SSD)</strong></td>
+                                                <td><span class="sample-count">16,874+ Failure Sets</span><br><small style="color:var(--text-muted)">7.18 GB / 250k+ drive days</small></td>
+                                                <td><span class="badge-model">TCN Storage RUL + XGBoost</span></td>
+                                                <td>SMART 5, 9, 187, 188, 194, 197, 198</td>
+                                                <td>Reallocated sectors, uncorrectable read errors, spindle wear, head crashes</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge-ds">AI4I 2020 Benchmark</span><br><small style="color:var(--text-muted)">UCI Machine Learning</small></td>
+                                                <td><strong style="color:var(--text-primary)">Multi-Component Core</strong></td>
+                                                <td><span class="sample-count">10,000 Machine Samples</span><br><small style="color:var(--text-muted)">5 synthetic failure types</small></td>
+                                                <td><span class="badge-model">1D-CNN Multi-Task Classifier</span></td>
+                                                <td>Air/Process Temp, RPM, Torque, Tool Wear</td>
+                                                <td>Thermal runaway, power failure, mechanical overstrain, tool wearout</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge-ds">NASA C-MAPSS</span><br><small style="color:var(--text-muted)">FD001–FD004 Run-to-Failure</small></td>
+                                                <td><strong style="color:var(--text-primary)">Cooling Fans &amp; Pumps</strong></td>
+                                                <td><span class="sample-count">20,631 Cycle Trajectories</span><br><small style="color:var(--text-muted)">Turbofan degradation</small></td>
+                                                <td><span class="badge-model">Fan Bearing Cavitation CNN</span></td>
+                                                <td>Vibration RMS, Kurtosis, Acoustic FFT, RPM</td>
+                                                <td>Bearing cavitation, blade imbalance, harmonic acoustic screech, motor friction</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge-ds">Alibaba DCBrain Datacenter</span><br><small style="color:var(--text-muted)">20191231 SMART Logs</small></td>
+                                                <td><strong style="color:var(--text-primary)">NVMe / SATA SSD Flash</strong></td>
+                                                <td><span class="sample-count">18,387 Failure Tickets</span><br><small style="color:var(--text-muted)">209 MB enterprise logs</small></td>
+                                                <td><span class="badge-model">TCN Storage RUL Specialist</span></td>
+                                                <td>Available Spare %, Percentage Used, Media Errors</td>
+                                                <td>NAND flash endurance exhaustion, spare block depletion, thermal throttle wear</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge-ds">Alibaba PAKDD 2021 DRAM</span><br><small style="color:var(--text-muted)">Tianchi Cloud Competition</small></td>
+                                                <td><strong style="color:var(--text-primary)">System Memory (RAM)</strong></td>
+                                                <td><span class="sample-count">Millions of DRAM Events</span><br><small style="color:var(--text-muted)">Enterprise memory logs</small></td>
+                                                <td><span class="badge-model">Memory Fault Classifier</span></td>
+                                                <td>Single-Bit CE burst rate/min, UE double-bit, WHEA</td>
+                                                <td>Memory cell degradation, bit-flip burst rate, row-hammer disturbance</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge-ds">Alibaba GPU &amp; Delta XID</span><br><small style="color:var(--text-muted)">NSDI '22 &amp; NCSA Delta</small></td>
+                                                <td><strong style="color:var(--text-primary)">GPU Core &amp; VRAM</strong></td>
+                                                <td><span class="sample-count">81,806 Failure Records</span><br><small style="color:var(--text-muted)">NVIDIA A100 / RTX logs</small></td>
+                                                <td><span class="badge-model">ST-GCN Graph Attention</span></td>
+                                                <td>SM Util, Board Power, Hotspot Delta, XID 79/63/48</td>
+                                                <td>PCIe bus fall-off (XID 79), VRAM ECC row remap (XID 63), thermal pad dry-out</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge-ds">Server Machine Dataset (SMD)</span><br><small style="color:var(--text-muted)">OmniAnomaly / KDD '19</small></td>
+                                                <td><strong style="color:var(--text-primary)">Cluster Node Telemetry</strong></td>
+                                                <td><span class="sample-count">708,420 Multi-Sensor Ticks</span><br><small style="color:var(--text-muted)">28 server entities</small></td>
+                                                <td><span class="badge-model">LSTM-Autoencoder &amp; MAD-GAN</span></td>
+                                                <td>38 continuous server telemetry channels</td>
+                                                <td>Temporal sequence anomalies, subtle distribution drift, multi-node correlation breaks</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="badge-ds">Live Field Cluster Telemetry</span><br><small style="color:var(--text-muted)">LOQ-Patient &amp; IdeaPad</small></td>
+                                                <td><strong style="color:var(--text-primary)">Physical Target Servers</strong></td>
+                                                <td><span class="sample-count" id="tblLiveFieldSamples">Live Streaming Buffer</span><br><small style="color:var(--text-muted)">Tailscale WireGuard Mesh</small></td>
+                                                <td><span class="badge-model">Adaptive Baseline &amp; Cloud Fusion</span></td>
+                                                <td>36 Harmonized Schema + ADXL345 &amp; INMP441</td>
+                                                <td>Real-time machine degradation, ACPI thermal proxies, ambient vibration and acoustic shock</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 5: TELEMETRY TRENDS (Hardware Mechanic View)
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane" id="pane-trends-view">
+                            <div class="trends-controls-bar">
+                                <div class="trends-range-selector" id="trendsRangeSelector">
+                                    <span class="lbl">History Window:</span>
+                                    <button class="btn-range active" data-range="5m">5 Min (Live)</button>
+                                    <button class="btn-range" data-range="1h">1 Hour</button>
+                                    <button class="btn-range" data-range="6h">6 Hours</button>
+                                    <button class="btn-range" data-range="24h">24 Hours</button>
+                                </div>
+                                <div class="trends-metrics-picker" id="trendsMetricsPicker">
+                                    <span class="lbl">Active Metrics:</span>
+                                    <button class="chip-metric active" data-metric="cpu_temp">CPU Temp</button>
+                                    <button class="chip-metric active" data-metric="cpu_load">CPU Load</button>
+                                    <button class="chip-metric" data-metric="gpu_temp">GPU Temp</button>
+                                    <button class="chip-metric" data-metric="ram_percent">RAM %</button>
+                                    <button class="chip-metric" data-metric="fan_rpm">Fan RPM</button>
+                                    <button class="chip-metric" data-metric="ambient_temp">Ambient Temp</button>
+                                </div>
+                            </div>
+
+                            <!-- Main Interactive Trends Chart -->
+                            <div class="trend-chart-card">
+                                <div class="tcc-header">
+                                    <h4>Interactive Multi-Metric Telemetry Stream</h4>
+                                    <span class="tcc-sub" id="trendsChartSub">Showing live 60-point rolling telemetry buffer</span>
+                                </div>
+                                <div class="trend-canvas-wrap">
+                                    <canvas id="mainTrendsChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Statistical Summaries Grid -->
+                            <div class="stats-cards-grid" id="trendsStatsGrid">
+                                <div class="stat-card">
+                                    <span class="st-lbl">CPU Temp Peak</span>
+                                    <span class="st-val" id="statCpuMax">—</span>
+                                    <span class="st-sub">Max observed</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="st-lbl">CPU Avg Load</span>
+                                    <span class="st-val" id="statCpuAvgLoad">—</span>
+                                    <span class="st-sub">Rolling average</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="st-lbl">Max Fan RPM</span>
+                                    <span class="st-val" id="statFanMax">—</span>
+                                    <span class="st-sub">Cooling performance</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="st-lbl">Thermal Ramp Rate</span>
+                                    <span class="st-val" id="statThermalRamp">+0.1 °C/s</span>
+                                    <span class="st-sub">ΔT rate of change</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 6: ROOT CAUSE & XAI (Hardware Mechanic SHAP View)
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane" id="pane-xai-view">
+                            <div class="xai-header-card">
+                                <div class="xai-title-wrap">
+                                    <h3>🔍 Explainable AI (XAI) &amp; Root Cause Investigation</h3>
+                                    <p>Deep insight into neural decision paths, SHAP feature impact rankings, and hardware remediation protocols.</p>
+                                </div>
+                                <div class="xai-select-incident">
+                                    <label for="xaiIncidentSelect">Investigate Incident:</label>
+                                    <select id="xaiIncidentSelect" class="form-select">
+                                        <option value="latest">Latest Active State</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- AI Decision Pathway Flow Visualizer -->
+                            <div class="decision-flow-card">
+                                <h4>AI Decision &amp; Confidence Routing Flow</h4>
+                                <div class="decision-pipeline">
+                                    <div class="pipe-step active">
+                                        <span class="ps-badge">1. INGEST</span>
+                                        <span class="ps-title">Sensor Telemetry</span>
+                                        <span class="ps-desc">36 Raw Channels</span>
+                                    </div>
+                                    <div class="pipe-arrow">➔</div>
+                                    <div class="pipe-step active">
+                                        <span class="ps-badge">2. EDGE AI</span>
+                                        <span class="ps-title">RPi4 LiteRT INT8</span>
+                                        <span class="ps-desc" id="flowEdgeScore">Confidence: 98%</span>
+                                    </div>
+                                    <div class="pipe-arrow">➔</div>
+                                    <div class="pipe-step" id="pipeRouterStep">
+                                        <span class="ps-badge">3. ROUTER</span>
+                                        <span class="ps-title">Threshold 0.85</span>
+                                        <span class="ps-desc" id="flowRouterDecision">LOCAL EXECUTION</span>
+                                    </div>
+                                    <div class="pipe-arrow">➔</div>
+                                    <div class="pipe-step" id="pipeCloudStep">
+                                        <span class="ps-badge">4. CLOUD GPU</span>
+                                        <span class="ps-title">LOQ Hospital</span>
+                                        <span class="ps-desc" id="flowCloudStatus">Standby / Deep FP32</span>
+                                    </div>
+                                    <div class="pipe-arrow">➔</div>
+                                    <div class="pipe-step active" id="pipeDiagnosisStep">
+                                        <span class="ps-badge">5. DIAGNOSIS</span>
+                                        <span class="ps-title" id="flowFaultLabel">HEALTHY</span>
+                                        <span class="ps-desc" id="flowTtfVal">TTF &gt; 30 Days</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SHAP & Remediation Split -->
+                            <div class="xai-split-grid">
+                                <!-- SHAP Bar Chart -->
+                                <div class="xai-card shap-card">
+                                    <div class="xc-head">
+                                        <h4>SHAP Feature Impact Contributions</h4>
+                                        <span class="xc-sub">Feature contribution towards failure (+Red) vs healthy (-Blue)</span>
+                                    </div>
+                                    <div class="shap-chart-box">
+                                        <canvas id="shapImpactChart"></canvas>
+                                    </div>
+                                    <div class="shap-table-box">
+                                        <table class="data-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Feature</th>
+                                                    <th>Measured Value</th>
+                                                    <th>Healthy Baseline</th>
+                                                    <th>SHAP Impact</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="shapTableBody">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">Awaiting cloud SHAP explanation data…</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Hardware Mechanic Remediation Checklist -->
+                                <div class="xai-card remediation-card">
+                                    <div class="xc-head">
+                                        <h4>🔧 Hardware Mechanic Action Plan</h4>
+                                        <span class="xc-sub">Physical inspection checklist based on diagnosed component</span>
+                                    </div>
+                                    <div class="remediation-steps" id="mechanicStepsList">
+                                        <div class="rem-step">
+                                            <span class="step-num">1</span>
+                                            <div class="step-body">
+                                                <h5>Inspect Physical Cooling &amp; Airflow</h5>
+                                                <p>Verify intake air filters are free of dust blockage. Ensure chassis clearance is at least 10 cm from obstructions.</p>
+                                            </div>
+                                        </div>
+                                        <div class="rem-step">
+                                            <span class="step-num">2</span>
+                                            <div class="step-body">
+                                                <h5>Check CPU Thermal Paste &amp; Heat Sink</h5>
+                                                <p>If thermal resistance slope exceeds 0.005 °C/(W·s) under load, re-apply high performance thermal interface material (TIM).</p>
+                                            </div>
+                                        </div>
+                                        <div class="rem-step">
+                                            <span class="step-num">3</span>
+                                            <div class="step-body">
+                                                <h5>Verify Fan Header RPM &amp; Tachometer</h5>
+                                                <p>Confirm PWM signal integrity and ensure no bearing friction or acoustic harmonic resonances.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 7: DATABASE & HISTORY (Hardware Mechanic Audit View)
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane" id="pane-database-view">
+                            <div class="db-stats-bar">
+                                <div class="db-stat-item">
+                                    <span class="db-lbl">Live Samples Ingested</span>
+                                    <span class="db-val" id="dbTotalSamplesCount" style="color:var(--status-healthy);font-weight:800;">Loading...</span>
+                                </div>
+                                <div class="db-stat-item">
+                                    <span class="db-lbl">SQLite Cache Path</span>
+                                    <span class="db-val">edge/data/edge_cache.db</span>
+                                </div>
+                                <div class="db-stat-item">
+                                    <span class="db-lbl">Retention Buffer</span>
+                                    <span class="db-val">24 Hours (Ring Buffer)</span>
+                                </div>
+                                <div class="db-stat-item">
+                                    <span class="db-lbl">Persistent Storage</span>
+                                    <span class="db-val">TimescaleDB 2.16 (LOQ Hospital)</span>
+                                </div>
+                                <div class="db-export-btns">
+                                    <button class="btn-action" id="btnExportCsv">📥 Export CSV</button>
+                                    <button class="btn-action" id="btnExportJson">📥 Export JSON</button>
+                                    <button class="btn-action btn-danger" id="btnClearCache" title="Wipe telemetry cache for selected server or all servers">🗑️ Clear Cache</button>
+                                </div>
+                            </div>
+
+                            <!-- Historical Event Log Table -->
+                            <div class="db-table-card">
+                                <div class="db-table-header">
+                                    <h4>Historical Anomaly &amp; Telemetry Database</h4>
+                                    <div class="table-filters">
+                                        <input type="text" id="dbSearchInput" placeholder="Search timestamp, fault…">
+                                        <select id="dbSeverityFilter" class="form-select-sm">
+                                            <option value="all">All Severities</option>
+                                            <option value="healthy">Healthy Only</option>
+                                            <option value="warning">Warning Only</option>
+                                            <option value="critical">Critical Only</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="data-table" id="dbHistoryTable">
+                                        <thead>
+                                            <tr>
+                                                <th class="sort-col" data-col="0" style="cursor:pointer">Timestamp <span class="sort-arrow">↕</span></th>
+                                                <th class="sort-col" data-col="1" style="cursor:pointer">Server ID <span class="sort-arrow">↕</span></th>
+                                                <th class="sort-col" data-col="2" style="cursor:pointer">Component <span class="sort-arrow">↕</span></th>
+                                                <th class="sort-col" data-col="3" style="cursor:pointer">Classification <span class="sort-arrow">↕</span></th>
+                                                <th class="sort-col" data-col="4" style="cursor:pointer">Confidence <span class="sort-arrow">↕</span></th>
+                                                <th class="sort-col" data-col="5" style="cursor:pointer">TTF Horizon <span class="sort-arrow">↕</span></th>
+                                                <th class="sort-col" data-col="6" style="cursor:pointer">Inference Node <span class="sort-arrow">↕</span></th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dbHistoryTableBody">
+                                            <tr>
+                                                <td colspan="8" class="text-center text-muted">Loading 24h SQLite historical records…</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 8: PLATFORM HEALTH (Distributed Architecture View)
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane" id="pane-platform-view">
+                            <div class="platform-topology-card">
+                                <h3>3-Tier Distributed Architecture Topology</h3>
+                                <p>Edge-AI Confidence-Aware Predictive Maintenance Framework over Tailscale WireGuard Mesh</p>
+
+                                <div class="arch-nodes-grid">
+                                    <!-- Patient Server -->
+                                    <div class="arch-node-card">
+                                        <div class="anc-head">
+                                            <span class="anc-badge">🏥 PATIENT</span>
+                                            <h4>Monitored Server</h4>
+                                        </div>
+                                        <div class="anc-body">
+                                            <div class="anc-row"><span>Agent:</span> <strong>collector_v2.py (6 Plugins)</strong></div>
+                                            <div class="anc-row"><span>Transport:</span> <strong>MQTT 1883 over Tailscale</strong></div>
+                                            <div class="anc-row"><span>Status:</span> <span class="text-success">● Connected (Live)</span></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Doctor RPi4 -->
+                                    <div class="arch-node-card active">
+                                        <div class="anc-head">
+                                            <span class="anc-badge">🩺 DOCTOR</span>
+                                            <h4>Raspberry Pi 4 (Edge)</h4>
+                                        </div>
+                                        <div class="anc-body">
+                                            <div class="anc-row"><span>Runtime:</span> <strong>Google LiteRT INT8 Quantized</strong></div>
+                                            <div class="anc-row"><span>Broker:</span> <strong>Mosquitto 1883</strong></div>
+                                            <div class="anc-row"><span>API Server:</span> <strong>FastAPI (Port 8080)</strong></div>
+                                            <div class="anc-row"><span>Sensors:</span> <strong>ADXL345 (I2C) + INMP441 (ALSA)</strong></div>
+                                            <div class="anc-row"><span>Status:</span> <span class="text-success">● Active (18ms Latency)</span></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hospital LOQ -->
+                                    <div class="arch-node-card">
+                                        <div class="anc-head">
+                                            <span class="anc-badge">🏨 HOSPITAL</span>
+                                            <h4>LOQ RTX 4060 (Cloud)</h4>
+                                        </div>
+                                        <div class="anc-body">
+                                            <div class="anc-row"><span>Inference API:</span> <strong>FastAPI (Port 8000)</strong></div>
+                                            <div class="anc-row"><span>AI Chat / RAG:</span> <strong>Ollama Qwen 3.5 4B (8001)</strong></div>
+                                            <div class="anc-row"><span>Models:</span> <strong>ST-GCN, MAD-GAN, LSTM-AE, FP32 CNN</strong></div>
+                                            <div class="anc-row"><span>Time Series:</span> <strong>TimescaleDB + Grafana</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Subsystems Health Table -->
+                            <div class="platform-services-card">
+                                <h4>Subsystem &amp; Service Abstraction Status</h4>
+                                <div class="services-grid">
+                                    <div class="svc-item">
+                                        <span class="svc-name">Mosquitto MQTT Broker</span>
+                                        <span class="svc-status online" id="svcMqtt">● 1883 ONLINE</span>
+                                    </div>
+                                    <div class="svc-item">
+                                        <span class="svc-name">RPi4 LiteRT INT8 Engine</span>
+                                        <span class="svc-status online" id="svcTflite">● ACTIVE (132 KB)</span>
+                                    </div>
+                                    <div class="svc-item">
+                                        <span class="svc-name">Cloud FP32 Inference (Port 8000)</span>
+                                        <span class="svc-status online" id="svcCloudInf">● READY</span>
+                                    </div>
+                                    <div class="svc-item">
+                                        <span class="svc-name">Ollama Qwen 3.5 4B Chat (Port 8001)</span>
+                                        <span class="svc-status online" id="svcOllama">● READY</span>
+                                    </div>
+                                    <div class="svc-item">
+                                        <span class="svc-name">SQLite Edge Cache (24h)</span>
+                                        <span class="svc-status online" id="svcSqlite">● READY</span>
+                                    </div>
+                                    <div class="svc-item">
+                                        <span class="svc-name">ADXL345 Vibration (I2C 0x53)</span>
+                                        <span class="svc-status online" id="svcAdxl">● LIVE HARDWARE</span>
+                                    </div>
+                                    <div class="svc-item">
+                                        <span class="svc-name">INMP441 Acoustic (ALSA I2S)</span>
+                                        <span class="svc-status online" id="svcInmp">● LIVE HARDWARE</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- ───────────────────────────────────────────────────────────
+                             TAB 9: CLOUD FUSION & ADAPTIVE THRESHOLDS
+                             ─────────────────────────────────────────────────────────── -->
+                        <section class="tab-pane" id="pane-cloud-view">
+                            <!-- Cloud Fusion Health Verdict -->
+                            <div class="cloud-fusion-card glass-card">
+                                <div class="cf-header">
+                                    <h3>☁️ Cloud Decision Fusion</h3>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <button class="btn-action" id="btnRunCloudFusion" style="padding:4px 10px; font-size:0.75rem;">⚡ Evaluate Fusion</button>
+                                        <span class="cf-badge" id="cfStatus">STANDBY</span>
+                                    </div>
+                                </div>
+                                <div class="cf-body">
+                                    <div class="cf-score-ring">
+                                        <svg viewBox="0 0 120 120" class="cf-ring-svg">
+                                            <circle cx="60" cy="60" r="54" class="cf-ring-bg"/>
+                                            <circle cx="60" cy="60" r="54" class="cf-ring-fill" id="cfRingFill"
+                                                stroke-dasharray="339.3" stroke-dashoffset="339.3"/>
+                                        </svg>
+                                        <div class="cf-score-text">
+                                            <span class="cf-score-val" id="cfScoreVal">—</span>
+                                            <span class="cf-score-label">HEALTH</span>
+                                        </div>
+                                    </div>
+                                    <div class="cf-models-grid">
+                                        <div class="cf-model-item">
+                                            <span class="cf-model-icon">🧠</span>
+                                            <span class="cf-model-name">MAD-GAN</span>
+                                            <span class="cf-model-score" id="cfMadgan">—</span>
+                                            <span class="cf-model-weight">5%</span>
+                                        </div>
+                                        <div class="cf-model-item">
+                                            <span class="cf-model-icon">🔗</span>
+                                            <span class="cf-model-name">STGCN</span>
+                                            <span class="cf-model-score" id="cfStgcn">—</span>
+                                            <span class="cf-model-weight">5%</span>
+                                        </div>
+                                        <div class="cf-model-item">
+                                            <span class="cf-model-icon">🔄</span>
+                                            <span class="cf-model-name">LSTM-AE</span>
+                                            <span class="cf-model-score" id="cfLstmAe">—</span>
+                                            <span class="cf-model-weight">15%</span>
+                                        </div>
+                                        <div class="cf-model-item">
+                                            <span class="cf-model-icon">⚡</span>
+                                            <span class="cf-model-name">Edge</span>
+                                            <span class="cf-model-score" id="cfEdge">—</span>
+                                            <span class="cf-model-weight">75%</span>
+                                        </div>
+                                    </div>
+                                    <div class="cf-recommendation" id="cfRecommendation">
+                                        Awaiting first cloud analysis...
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Adaptive Thresholds Table -->
+                            <div class="adaptive-thresholds-card glass-card">
+                                <div class="at-header">
+                                    <h3>📊 Adaptive Percentile Thresholds</h3>
+                                    <span class="at-info">Percentile-based | 7-day sliding window | 70% data-driven</span>
+                                </div>
+                                <div class="at-body">
+                                    <table class="at-table" id="thresholdsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Metric</th>
+                                                <th>Warning</th>
+                                                <th>Critical</th>
+                                                <th>P95</th>
+                                                <th>P99</th>
+                                                <th>Source</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="thresholdsTableBody">
+                                            <tr><td colspan="6" class="text-center text-muted">Loading thresholds...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+
+                    </div> <!-- End #complexViewContainer -->
+
+                </div> <!-- End #serverContentWrapper -->
+            </main>
+
+            <!-- ─── Right Drawer: Contextual AI Assistant ─── -->
+            <aside class="chat-drawer" id="chatDrawer">
+                <div class="chat-header">
+                    <div class="ch-left">
+                        <h3>🤖 AI Diagnostic Assistant</h3>
+                        <span class="chat-subtitle">Qwen 3.5 4B • Context-Aware RAG</span>
+                    </div>
+                    <button class="btn-close-chat" id="btnCloseChat">✕</button>
+                </div>
+                
+                <div class="chat-history" id="chatHistory">
+                    <div class="msg system">
+                        Hello! I am your Edge-AI Predictive Maintenance Assistant. I analyze real-time telemetry across all 36 channels, physical sensors (ADXL345/INMP441), confidence routing, and SHAP explanations to provide actionable hardware diagnostics.
+                    </div>
+                </div>
+
+                <div class="chat-quick-prompts">
+                    <button class="chip-prompt" onclick="sendQuickPrompt('Explain current server risk and TTF.')">Explain Risks</button>
+                    <button class="chip-prompt" onclick="sendQuickPrompt('Why is health index degraded?')">Why Health Low?</button>
+                    <button class="chip-prompt" onclick="sendQuickPrompt('Which sensors are active vs unsupported?')">Sensor Audit</button>
+                    <button class="chip-prompt" onclick="sendQuickPrompt('Provide hardware maintenance checklist.')">Checklist</button>
+                </div>
+
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Ask diagnostic question…" autocomplete="off">
+                    <button id="btnSend" aria-label="Send message">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Inspect Record Modal -->
+    <div id="inspectRecordModal" class="inspect-modal-overlay" style="display:none;">
+        <div class="inspect-modal-card glass-card">
+            <div class="imc-header">
+                <div class="imc-title-group">
+                    <span class="imc-badge" id="modalBadge">TELEMETRY RECORD</span>
+                    <h3 id="modalRecordTitle">Record Details</h3>
+                </div>
+                <button class="imc-close" id="btnModalClose" aria-label="Close modal">✕</button>
+            </div>
+            <div class="imc-body" id="modalRecordBody">
+                <!-- Dynamically populated with record details and telemetry payload -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Controller -->
+    <script src="assets/app.js?v=20260928_viva_audit"></script>
+</body>
+</html>

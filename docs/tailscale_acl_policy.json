@@ -1,0 +1,59 @@
+{
+  "groups": {
+    "group:admin": [
+      "notanrobot69@gmail.com"
+    ]
+  },
+  "tagOwners": {
+    "tag:patient": ["group:admin"],
+    "tag:edge": ["group:admin"],
+    "tag:cloud": ["group:admin"]
+  },
+  "acls": [
+    {
+      "action": "accept",
+      "src": ["group:admin"],
+      "dst": ["*:*"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:patient"],
+      "dst": ["tag:edge:1883"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:edge"],
+      "dst": ["tag:cloud:8000", "tag:cloud:8001", "tag:cloud:5432"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:cloud"],
+      "dst": ["tag:edge:22", "tag:edge:8080", "tag:edge:1883", "tag:patient:22"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:cloud"],
+      "dst": ["tag:cloud:8000", "tag:cloud:8001", "tag:cloud:5432", "tag:cloud:3000", "tag:cloud:11434"]
+    }
+  ],
+  "tests": [
+    {
+      "src": "tag:patient",
+      "accept": ["tag:edge:1883"],
+      "deny": ["tag:cloud:8000", "tag:edge:8080"]
+    },
+    {
+      "src": "tag:edge",
+      "accept": ["tag:cloud:8000", "tag:cloud:8001", "tag:cloud:5432"],
+      "deny": ["tag:patient:22"]
+    },
+    {
+      "src": "tag:cloud",
+      "accept": ["tag:edge:22", "tag:edge:8080", "tag:edge:1883", "tag:patient:22"]
+    },
+    {
+      "src": "group:admin",
+      "accept": ["tag:edge:22", "tag:cloud:8000", "tag:patient:22"]
+    }
+  ]
+}

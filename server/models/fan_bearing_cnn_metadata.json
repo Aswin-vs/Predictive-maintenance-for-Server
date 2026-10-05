@@ -1,0 +1,25 @@
+{
+  "model_name": "Fan Bearing 1D-CNN",
+  "phase": "G3.4 + G3.7",
+  "architecture": "3x Conv1D (32\u219264\u219232) + GAP + Dense(16) + Dense(1)",
+  "input_shape": [
+    60,
+    3
+  ],
+  "features": [
+    "PWM_duty_pct",
+    "actual_RPM",
+    "PWM_RPM_ratio"
+  ],
+  "output": "Binary (0=healthy, 1=degrading)",
+  "training_data": "Synthetic (3000 healthy + 3000 degrading)",
+  "test_accuracy": 1.0,
+  "test_auc": 1.0,
+  "int8_accuracy": 1.0,
+  "fp32_path": "C:\\Users\\LOQ\\Documents\\Antigravity\\Predictive maintenance for Server\\server\\training\\..\\models\\fan_bearing_cnn_fp32.keras",
+  "tflite_path": "C:\\Users\\LOQ\\Documents\\Antigravity\\Predictive maintenance for Server\\server\\training\\..\\models\\fan_bearing_cnn_int8.tflite",
+  "tflite_size_kb": 27.1875,
+  "scaler_path": "C:\\Users\\LOQ\\Documents\\Antigravity\\Predictive maintenance for Server\\server\\training\\..\\models\\fan_bearing_scaler.joblib",
+  "trained_at": "2026-09-13T02:11:06",
+  "epochs_run": 13
+}

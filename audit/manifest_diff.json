@@ -1,0 +1,1871 @@
+{
+  "loq_total_files": 497,
+  "rpi4_total_files": 59,
+  "common_identical_count": 46,
+  "version_skew_count": 1,
+  "loq_only_count": 450,
+  "rpi4_only_count": 12,
+  "version_skew_files": [
+    {
+      "path": "edge/data/edge_cache.db",
+      "loq_size": 36864,
+      "rpi4_size": 42852352,
+      "loq_sha256": "55918177da49c94736fe0cce94ffa8a60d3c4bcad1a5c86e1c0fb0de9305d27f",
+      "rpi4_sha256": "87046b3902a866252288995d53a5cfe025654883db8205cec6a6a3d78c6bba8a",
+      "loq_mtime": "2026-09-25T13:27:32.211581+00:00",
+      "rpi4_mtime": "2026-09-25T18:41:25.212582+00:00"
+    }
+  ],
+  "loq_only_files": [
+    {
+      "path": ".env",
+      "size_bytes": 135
+    },
+    {
+      "path": ".gitignore",
+      "size_bytes": 1178
+    },
+    {
+      "path": "MEMORIES.md",
+      "size_bytes": 114575
+    },
+    {
+      "path": "PROJECT_SUMMARY.md",
+      "size_bytes": 64133
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 10767
+    },
+    {
+      "path": "START_ALL.bat",
+      "size_bytes": 4082
+    },
+    {
+      "path": "STOP_ALL.bat",
+      "size_bytes": 1980
+    },
+    {
+      "path": "agent_handover/FINAL_PROJECT_REPORT.md",
+      "size_bytes": 15510
+    },
+    {
+      "path": "agent_handover/README.md",
+      "size_bytes": 2148
+    },
+    {
+      "path": "agent_handover/gemini_38_flash_execution_prompt_v3.md",
+      "size_bytes": 26039
+    },
+    {
+      "path": "agent_handover/master_production_readiness_blueprint_v4.md",
+      "size_bytes": 22578
+    },
+    {
+      "path": "build_patient_package.bat",
+      "size_bytes": 3872
+    },
+    {
+      "path": "check_status.py",
+      "size_bytes": 1906
+    },
+    {
+      "path": "configs/cloud.env",
+      "size_bytes": 533
+    },
+    {
+      "path": "configs/grafana/provisioning/datasources/timescaledb.yml",
+      "size_bytes": 469
+    },
+    {
+      "path": "configs/server.env",
+      "size_bytes": 516
+    },
+    {
+      "path": "data/ai4i_2020/ai4i2020.csv",
+      "size_bytes": 522048
+    },
+    {
+      "path": "data/alibaba_dram/alibaba_dram_benchmark.csv",
+      "size_bytes": 24147
+    },
+    {
+      "path": "data/alibaba_gpu/alibaba_gpu_benchmark.csv",
+      "size_bytes": 27202
+    },
+    {
+      "path": "data/alibaba_ssd/20191231.csv",
+      "size_bytes": 209859515
+    },
+    {
+      "path": "data/alibaba_ssd/location_info_of_ssd.csv",
+      "size_bytes": 29885030
+    },
+    {
+      "path": "data/alibaba_ssd/ssd_failure_tag.csv",
+      "size_bytes": 3648101
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-01.csv",
+      "size_bytes": 82741337
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-02.csv",
+      "size_bytes": 82739682
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-03.csv",
+      "size_bytes": 82729395
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-04.csv",
+      "size_bytes": 82718201
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-05.csv",
+      "size_bytes": 82723791
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-06.csv",
+      "size_bytes": 82762810
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-07.csv",
+      "size_bytes": 82767657
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-08.csv",
+      "size_bytes": 82767796
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-09.csv",
+      "size_bytes": 82765916
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-10.csv",
+      "size_bytes": 83108571
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-11.csv",
+      "size_bytes": 83175382
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-12.csv",
+      "size_bytes": 83173417
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-13.csv",
+      "size_bytes": 83173907
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-14.csv",
+      "size_bytes": 83186696
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-15.csv",
+      "size_bytes": 83182155
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-16.csv",
+      "size_bytes": 83184822
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-17.csv",
+      "size_bytes": 83172382
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-18.csv",
+      "size_bytes": 83176383
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-19.csv",
+      "size_bytes": 83515433
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-20.csv",
+      "size_bytes": 83566811
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-21.csv",
+      "size_bytes": 83569780
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-22.csv",
+      "size_bytes": 83566070
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-23.csv",
+      "size_bytes": 83574728
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-24.csv",
+      "size_bytes": 83580828
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-25.csv",
+      "size_bytes": 83579306
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-26.csv",
+      "size_bytes": 83579636
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-27.csv",
+      "size_bytes": 83576482
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-28.csv",
+      "size_bytes": 83559058
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-29.csv",
+      "size_bytes": 83558893
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-30.csv",
+      "size_bytes": 83563182
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-01-31.csv",
+      "size_bytes": 83586025
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-01.csv",
+      "size_bytes": 83576571
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-02.csv",
+      "size_bytes": 83584555
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-03.csv",
+      "size_bytes": 83585148
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-04.csv",
+      "size_bytes": 83589677
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-05.csv",
+      "size_bytes": 83580488
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-06.csv",
+      "size_bytes": 83588679
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-07.csv",
+      "size_bytes": 83593898
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-08.csv",
+      "size_bytes": 83591156
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-09.csv",
+      "size_bytes": 83591562
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-10.csv",
+      "size_bytes": 83591677
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-11.csv",
+      "size_bytes": 83599362
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-12.csv",
+      "size_bytes": 83940161
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-13.csv",
+      "size_bytes": 84019336
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-14.csv",
+      "size_bytes": 84021967
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-15.csv",
+      "size_bytes": 84354733
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-16.csv",
+      "size_bytes": 84420676
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-17.csv",
+      "size_bytes": 84425551
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-18.csv",
+      "size_bytes": 84419208
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-19.csv",
+      "size_bytes": 84428345
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-20.csv",
+      "size_bytes": 84405878
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-21.csv",
+      "size_bytes": 84403445
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-22.csv",
+      "size_bytes": 84421274
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-23.csv",
+      "size_bytes": 84399648
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-24.csv",
+      "size_bytes": 84400650
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-25.csv",
+      "size_bytes": 84756279
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-26.csv",
+      "size_bytes": 84815086
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-27.csv",
+      "size_bytes": 84818438
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-02-28.csv",
+      "size_bytes": 84818956
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-01.csv",
+      "size_bytes": 84814295
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-02.csv",
+      "size_bytes": 84820948
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-03.csv",
+      "size_bytes": 84820984
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-04.csv",
+      "size_bytes": 84821307
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-05.csv",
+      "size_bytes": 84821298
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-06.csv",
+      "size_bytes": 84808968
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-07.csv",
+      "size_bytes": 84822650
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-08.csv",
+      "size_bytes": 84811834
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-09.csv",
+      "size_bytes": 84816320
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-10.csv",
+      "size_bytes": 84814397
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-11.csv",
+      "size_bytes": 84823556
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-12.csv",
+      "size_bytes": 84823584
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-13.csv",
+      "size_bytes": 84823532
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-14.csv",
+      "size_bytes": 84829667
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-15.csv",
+      "size_bytes": 84830839
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-16.csv",
+      "size_bytes": 84828535
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-17.csv",
+      "size_bytes": 84821575
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-18.csv",
+      "size_bytes": 84831617
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-19.csv",
+      "size_bytes": 53819312
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-20.csv",
+      "size_bytes": 84238932
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-21.csv",
+      "size_bytes": 84688753
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-22.csv",
+      "size_bytes": 84828031
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-23.csv",
+      "size_bytes": 84815445
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-24.csv",
+      "size_bytes": 84796777
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-25.csv",
+      "size_bytes": 84820293
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-26.csv",
+      "size_bytes": 84813855
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-27.csv",
+      "size_bytes": 84816956
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-28.csv",
+      "size_bytes": 84761995
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-29.csv",
+      "size_bytes": 84824491
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-30.csv",
+      "size_bytes": 84815542
+    },
+    {
+      "path": "data/backblaze/data_Q1_2023/2023-03-31.csv",
+      "size_bytes": 84819727
+    },
+    {
+      "path": "data/delta_gpu_xid/delta_a100_gpu_xid_dataset_with_GPU_failure_label.pkl",
+      "size_bytes": 7371373
+    },
+    {
+      "path": "data/infinite_hbd_gpu/fault_statistics.json",
+      "size_bytes": 3127
+    },
+    {
+      "path": "data/infinite_hbd_gpu/fault_trace.json",
+      "size_bytes": 339053
+    },
+    {
+      "path": "data/nasa_cmapss/Damage Propagation Modeling.pdf",
+      "size_bytes": 434158
+    },
+    {
+      "path": "data/nasa_cmapss/RUL_FD001.txt",
+      "size_bytes": 429
+    },
+    {
+      "path": "data/nasa_cmapss/RUL_FD002.txt",
+      "size_bytes": 1110
+    },
+    {
+      "path": "data/nasa_cmapss/RUL_FD003.txt",
+      "size_bytes": 428
+    },
+    {
+      "path": "data/nasa_cmapss/RUL_FD004.txt",
+      "size_bytes": 1084
+    },
+    {
+      "path": "data/nasa_cmapss/readme.txt",
+      "size_bytes": 2442
+    },
+    {
+      "path": "data/nasa_cmapss/test_FD001.txt",
+      "size_bytes": 2228855
+    },
+    {
+      "path": "data/nasa_cmapss/test_FD002.txt",
+      "size_bytes": 5734587
+    },
+    {
+      "path": "data/nasa_cmapss/test_FD003.txt",
+      "size_bytes": 2826651
+    },
+    {
+      "path": "data/nasa_cmapss/test_FD004.txt",
+      "size_bytes": 6957759
+    },
+    {
+      "path": "data/nasa_cmapss/train_FD001.txt",
+      "size_bytes": 3515356
+    },
+    {
+      "path": "data/nasa_cmapss/train_FD002.txt",
+      "size_bytes": 9082480
+    },
+    {
+      "path": "data/nasa_cmapss/train_FD003.txt",
+      "size_bytes": 4213862
+    },
+    {
+      "path": "data/nasa_cmapss/train_FD004.txt",
+      "size_bytes": 10350705
+    },
+    {
+      "path": "data/processed/backblaze_ttf.csv",
+      "size_bytes": 1678266730
+    },
+    {
+      "path": "data/skab/.gitignore",
+      "size_bytes": 1131
+    },
+    {
+      "path": "data/skab/.pre-commit-config.yaml",
+      "size_bytes": 2886
+    },
+    {
+      "path": "data/skab/LICENSE",
+      "size_bytes": 35823
+    },
+    {
+      "path": "data/skab/README.md",
+      "size_bytes": 10875
+    },
+    {
+      "path": "data/skab/core/Conv_AE.py",
+      "size_bytes": 3584
+    },
+    {
+      "path": "data/skab/core/Isolation_Forest.py",
+      "size_bytes": 2395
+    },
+    {
+      "path": "data/skab/core/LSTM_AE.py",
+      "size_bytes": 3140
+    },
+    {
+      "path": "data/skab/core/LSTM_VAE.py",
+      "size_bytes": 5804
+    },
+    {
+      "path": "data/skab/core/MSCRED.py",
+      "size_bytes": 10916
+    },
+    {
+      "path": "data/skab/core/MSET.py",
+      "size_bytes": 4714
+    },
+    {
+      "path": "data/skab/core/Vanilla_AE.py",
+      "size_bytes": 4246
+    },
+    {
+      "path": "data/skab/core/Vanilla_LSTM.py",
+      "size_bytes": 2938
+    },
+    {
+      "path": "data/skab/core/__init.py__",
+      "size_bytes": 0
+    },
+    {
+      "path": "data/skab/core/metrics.py",
+      "size_bytes": 30678
+    },
+    {
+      "path": "data/skab/core/t2.py",
+      "size_bytes": 12824
+    },
+    {
+      "path": "data/skab/core/utils.py",
+      "size_bytes": 2487
+    },
+    {
+      "path": "data/skab/data/README.md",
+      "size_bytes": 2506
+    },
+    {
+      "path": "data/skab/data/anomaly-free/anomaly-free.csv",
+      "size_bytes": 814703
+    },
+    {
+      "path": "data/skab/data/other/1.csv",
+      "size_bytes": 71072
+    },
+    {
+      "path": "data/skab/data/other/10.csv",
+      "size_bytes": 125844
+    },
+    {
+      "path": "data/skab/data/other/11.csv",
+      "size_bytes": 112720
+    },
+    {
+      "path": "data/skab/data/other/12.csv",
+      "size_bytes": 99534
+    },
+    {
+      "path": "data/skab/data/other/13.csv",
+      "size_bytes": 87634
+    },
+    {
+      "path": "data/skab/data/other/14.csv",
+      "size_bytes": 85828
+    },
+    {
+      "path": "data/skab/data/other/2.csv",
+      "size_bytes": 74442
+    },
+    {
+      "path": "data/skab/data/other/3.csv",
+      "size_bytes": 108542
+    },
+    {
+      "path": "data/skab/data/other/4.csv",
+      "size_bytes": 113526
+    },
+    {
+      "path": "data/skab/data/other/5.csv",
+      "size_bytes": 109359
+    },
+    {
+      "path": "data/skab/data/other/6.csv",
+      "size_bytes": 108570
+    },
+    {
+      "path": "data/skab/data/other/7.csv",
+      "size_bytes": 103145
+    },
+    {
+      "path": "data/skab/data/other/8.csv",
+      "size_bytes": 108748
+    },
+    {
+      "path": "data/skab/data/other/9.csv",
+      "size_bytes": 108481
+    },
+    {
+      "path": "data/skab/data/valve1/0.csv",
+      "size_bytes": 110346
+    },
+    {
+      "path": "data/skab/data/valve1/1.csv",
+      "size_bytes": 110330
+    },
+    {
+      "path": "data/skab/data/valve1/10.csv",
+      "size_bytes": 110623
+    },
+    {
+      "path": "data/skab/data/valve1/11.csv",
+      "size_bytes": 110166
+    },
+    {
+      "path": "data/skab/data/valve1/12.csv",
+      "size_bytes": 110061
+    },
+    {
+      "path": "data/skab/data/valve1/13.csv",
+      "size_bytes": 110455
+    },
+    {
+      "path": "data/skab/data/valve1/14.csv",
+      "size_bytes": 110181
+    },
+    {
+      "path": "data/skab/data/valve1/15.csv",
+      "size_bytes": 111352
+    },
+    {
+      "path": "data/skab/data/valve1/2.csv",
+      "size_bytes": 103507
+    },
+    {
+      "path": "data/skab/data/valve1/3.csv",
+      "size_bytes": 110534
+    },
+    {
+      "path": "data/skab/data/valve1/4.csv",
+      "size_bytes": 105634
+    },
+    {
+      "path": "data/skab/data/valve1/5.csv",
+      "size_bytes": 111575
+    },
+    {
+      "path": "data/skab/data/valve1/6.csv",
+      "size_bytes": 111676
+    },
+    {
+      "path": "data/skab/data/valve1/7.csv",
+      "size_bytes": 105941
+    },
+    {
+      "path": "data/skab/data/valve1/8.csv",
+      "size_bytes": 110305
+    },
+    {
+      "path": "data/skab/data/valve1/9.csv",
+      "size_bytes": 110586
+    },
+    {
+      "path": "data/skab/data/valve2/0.csv",
+      "size_bytes": 109156
+    },
+    {
+      "path": "data/skab/data/valve2/1.csv",
+      "size_bytes": 102680
+    },
+    {
+      "path": "data/skab/data/valve2/2.csv",
+      "size_bytes": 109005
+    },
+    {
+      "path": "data/skab/data/valve2/3.csv",
+      "size_bytes": 96048
+    },
+    {
+      "path": "data/skab/docs/contributing.md",
+      "size_bytes": 645
+    },
+    {
+      "path": "data/skab/docs/pictures/nab-metric.jpg",
+      "size_bytes": 32764
+    },
+    {
+      "path": "data/skab/docs/pictures/skab.png",
+      "size_bytes": 85613
+    },
+    {
+      "path": "data/skab/docs/pictures/testbed.png",
+      "size_bytes": 2607316
+    },
+    {
+      "path": "data/skab/notebooks/ArimaFD.ipynb",
+      "size_bytes": 32531
+    },
+    {
+      "path": "data/skab/notebooks/Conv_AE.ipynb",
+      "size_bytes": 55790
+    },
+    {
+      "path": "data/skab/notebooks/LSTM_AE.ipynb",
+      "size_bytes": 59082
+    },
+    {
+      "path": "data/skab/notebooks/MSET.ipynb",
+      "size_bytes": 57661
+    },
+    {
+      "path": "data/skab/notebooks/README.md",
+      "size_bytes": 6435
+    },
+    {
+      "path": "data/skab/notebooks/Vanilla_AE.ipynb",
+      "size_bytes": 50731
+    },
+    {
+      "path": "data/skab/notebooks/Vanilla_LSTM.ipynb",
+      "size_bytes": 99194
+    },
+    {
+      "path": "data/skab/notebooks/isolation_forest.ipynb",
+      "size_bytes": 62394
+    },
+    {
+      "path": "data/skab/notebooks/mscred.ipynb",
+      "size_bytes": 81838
+    },
+    {
+      "path": "data/skab/notebooks/t2_SKAB.ipynb",
+      "size_bytes": 54563
+    },
+    {
+      "path": "data/skab/notebooks/t2_with_q_SKAB.ipynb",
+      "size_bytes": 54809
+    },
+    {
+      "path": "data/skab/poetry.lock",
+      "size_bytes": 223872
+    },
+    {
+      "path": "data/skab/pyproject.toml",
+      "size_bytes": 619
+    },
+    {
+      "path": "data/skab/results/results-Arima_anomaly_detection.pkl",
+      "size_bytes": 585308
+    },
+    {
+      "path": "data/skab/results/results-Conv_AE.pkl",
+      "size_bytes": 585308
+    },
+    {
+      "path": "data/skab/results/results-Isolation_Forest.pkl",
+      "size_bytes": 585308
+    },
+    {
+      "path": "data/skab/results/results-LSTM_AE.pkl",
+      "size_bytes": 585308
+    },
+    {
+      "path": "data/skab/results/results-MSCRED.pkl",
+      "size_bytes": 553484
+    },
+    {
+      "path": "data/skab/results/results-MSET.pkl",
+      "size_bytes": 585308
+    },
+    {
+      "path": "data/skab/results/results-T2-q.pkl",
+      "size_bytes": 585344
+    },
+    {
+      "path": "data/skab/results/results-T2.pkl",
+      "size_bytes": 585308
+    },
+    {
+      "path": "data/skab/results/results-Vanilla_AE.pkl",
+      "size_bytes": 585308
+    },
+    {
+      "path": "data/skab/results/results-Vanilla_LSTM.pkl",
+      "size_bytes": 581228
+    },
+    {
+      "path": "data/smd/LICENSE",
+      "size_bytes": 1093
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-1-1.txt",
+      "size_bytes": 319
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-1-2.txt",
+      "size_bytes": 304
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-1-3.txt",
+      "size_bytes": 363
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-1-4.txt",
+      "size_bytes": 433
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-1-5.txt",
+      "size_bytes": 283
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-1-6.txt",
+      "size_bytes": 1157
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-1-7.txt",
+      "size_bytes": 512
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-1-8.txt",
+      "size_bytes": 514
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-1.txt",
+      "size_bytes": 402
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-2.txt",
+      "size_bytes": 324
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-3.txt",
+      "size_bytes": 339
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-4.txt",
+      "size_bytes": 480
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-5.txt",
+      "size_bytes": 534
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-6.txt",
+      "size_bytes": 328
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-7.txt",
+      "size_bytes": 477
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-8.txt",
+      "size_bytes": 107
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-2-9.txt",
+      "size_bytes": 386
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-1.txt",
+      "size_bytes": 155
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-10.txt",
+      "size_bytes": 429
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-11.txt",
+      "size_bytes": 162
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-2.txt",
+      "size_bytes": 197
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-3.txt",
+      "size_bytes": 813
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-4.txt",
+      "size_bytes": 174
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-5.txt",
+      "size_bytes": 265
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-6.txt",
+      "size_bytes": 390
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-7.txt",
+      "size_bytes": 252
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-8.txt",
+      "size_bytes": 232
+    },
+    {
+      "path": "data/smd/interpretation_label/machine-3-9.txt",
+      "size_bytes": 170
+    },
+    {
+      "path": "data/smd/test/machine-1-1.txt",
+      "size_bytes": 9768297
+    },
+    {
+      "path": "data/smd/test/machine-1-2.txt",
+      "size_bytes": 8127042
+    },
+    {
+      "path": "data/smd/test/machine-1-3.txt",
+      "size_bytes": 8130129
+    },
+    {
+      "path": "data/smd/test/machine-1-4.txt",
+      "size_bytes": 8131501
+    },
+    {
+      "path": "data/smd/test/machine-1-5.txt",
+      "size_bytes": 8131158
+    },
+    {
+      "path": "data/smd/test/machine-1-6.txt",
+      "size_bytes": 8125327
+    },
+    {
+      "path": "data/smd/test/machine-1-7.txt",
+      "size_bytes": 8128071
+    },
+    {
+      "path": "data/smd/test/machine-1-8.txt",
+      "size_bytes": 8128757
+    },
+    {
+      "path": "data/smd/test/machine-2-1.txt",
+      "size_bytes": 8127042
+    },
+    {
+      "path": "data/smd/test/machine-2-2.txt",
+      "size_bytes": 8129100
+    },
+    {
+      "path": "data/smd/test/machine-2-3.txt",
+      "size_bytes": 8125327
+    },
+    {
+      "path": "data/smd/test/machine-2-4.txt",
+      "size_bytes": 8125327
+    },
+    {
+      "path": "data/smd/test/machine-2-5.txt",
+      "size_bytes": 8125327
+    },
+    {
+      "path": "data/smd/test/machine-2-6.txt",
+      "size_bytes": 9858849
+    },
+    {
+      "path": "data/smd/test/machine-2-7.txt",
+      "size_bytes": 8127728
+    },
+    {
+      "path": "data/smd/test/machine-2-8.txt",
+      "size_bytes": 8130129
+    },
+    {
+      "path": "data/smd/test/machine-2-9.txt",
+      "size_bytes": 9851646
+    },
+    {
+      "path": "data/smd/test/machine-3-1.txt",
+      "size_bytes": 9844100
+    },
+    {
+      "path": "data/smd/test/machine-3-10.txt",
+      "size_bytes": 8126699
+    },
+    {
+      "path": "data/smd/test/machine-3-11.txt",
+      "size_bytes": 9842728
+    },
+    {
+      "path": "data/smd/test/machine-3-2.txt",
+      "size_bytes": 8130129
+    },
+    {
+      "path": "data/smd/test/machine-3-3.txt",
+      "size_bytes": 8130129
+    },
+    {
+      "path": "data/smd/test/machine-3-4.txt",
+      "size_bytes": 8124641
+    },
+    {
+      "path": "data/smd/test/machine-3-5.txt",
+      "size_bytes": 8126013
+    },
+    {
+      "path": "data/smd/test/machine-3-6.txt",
+      "size_bytes": 9853018
+    },
+    {
+      "path": "data/smd/test/machine-3-7.txt",
+      "size_bytes": 9845815
+    },
+    {
+      "path": "data/smd/test/machine-3-8.txt",
+      "size_bytes": 9845472
+    },
+    {
+      "path": "data/smd/test/machine-3-9.txt",
+      "size_bytes": 9848559
+    },
+    {
+      "path": "data/smd/test_label/machine-1-1.txt",
+      "size_bytes": 85437
+    },
+    {
+      "path": "data/smd/test_label/machine-1-2.txt",
+      "size_bytes": 71082
+    },
+    {
+      "path": "data/smd/test_label/machine-1-3.txt",
+      "size_bytes": 71109
+    },
+    {
+      "path": "data/smd/test_label/machine-1-4.txt",
+      "size_bytes": 71121
+    },
+    {
+      "path": "data/smd/test_label/machine-1-5.txt",
+      "size_bytes": 71118
+    },
+    {
+      "path": "data/smd/test_label/machine-1-6.txt",
+      "size_bytes": 71067
+    },
+    {
+      "path": "data/smd/test_label/machine-1-7.txt",
+      "size_bytes": 71091
+    },
+    {
+      "path": "data/smd/test_label/machine-1-8.txt",
+      "size_bytes": 71097
+    },
+    {
+      "path": "data/smd/test_label/machine-2-1.txt",
+      "size_bytes": 71082
+    },
+    {
+      "path": "data/smd/test_label/machine-2-2.txt",
+      "size_bytes": 71100
+    },
+    {
+      "path": "data/smd/test_label/machine-2-3.txt",
+      "size_bytes": 71067
+    },
+    {
+      "path": "data/smd/test_label/machine-2-4.txt",
+      "size_bytes": 71067
+    },
+    {
+      "path": "data/smd/test_label/machine-2-5.txt",
+      "size_bytes": 71067
+    },
+    {
+      "path": "data/smd/test_label/machine-2-6.txt",
+      "size_bytes": 86229
+    },
+    {
+      "path": "data/smd/test_label/machine-2-7.txt",
+      "size_bytes": 71088
+    },
+    {
+      "path": "data/smd/test_label/machine-2-8.txt",
+      "size_bytes": 71109
+    },
+    {
+      "path": "data/smd/test_label/machine-2-9.txt",
+      "size_bytes": 86166
+    },
+    {
+      "path": "data/smd/test_label/machine-3-1.txt",
+      "size_bytes": 86100
+    },
+    {
+      "path": "data/smd/test_label/machine-3-10.txt",
+      "size_bytes": 71079
+    },
+    {
+      "path": "data/smd/test_label/machine-3-11.txt",
+      "size_bytes": 86088
+    },
+    {
+      "path": "data/smd/test_label/machine-3-2.txt",
+      "size_bytes": 71109
+    },
+    {
+      "path": "data/smd/test_label/machine-3-3.txt",
+      "size_bytes": 71109
+    },
+    {
+      "path": "data/smd/test_label/machine-3-4.txt",
+      "size_bytes": 71061
+    },
+    {
+      "path": "data/smd/test_label/machine-3-5.txt",
+      "size_bytes": 71073
+    },
+    {
+      "path": "data/smd/test_label/machine-3-6.txt",
+      "size_bytes": 86178
+    },
+    {
+      "path": "data/smd/test_label/machine-3-7.txt",
+      "size_bytes": 86115
+    },
+    {
+      "path": "data/smd/test_label/machine-3-8.txt",
+      "size_bytes": 86112
+    },
+    {
+      "path": "data/smd/test_label/machine-3-9.txt",
+      "size_bytes": 86139
+    },
+    {
+      "path": "data/smd/train/machine-1-1.txt",
+      "size_bytes": 9768297
+    },
+    {
+      "path": "data/smd/train/machine-1-2.txt",
+      "size_bytes": 8127042
+    },
+    {
+      "path": "data/smd/train/machine-1-3.txt",
+      "size_bytes": 8129786
+    },
+    {
+      "path": "data/smd/train/machine-1-4.txt",
+      "size_bytes": 8131158
+    },
+    {
+      "path": "data/smd/train/machine-1-5.txt",
+      "size_bytes": 8130815
+    },
+    {
+      "path": "data/smd/train/machine-1-6.txt",
+      "size_bytes": 8124984
+    },
+    {
+      "path": "data/smd/train/machine-1-7.txt",
+      "size_bytes": 8128071
+    },
+    {
+      "path": "data/smd/train/machine-1-8.txt",
+      "size_bytes": 8128414
+    },
+    {
+      "path": "data/smd/train/machine-2-1.txt",
+      "size_bytes": 8126699
+    },
+    {
+      "path": "data/smd/train/machine-2-2.txt",
+      "size_bytes": 8128757
+    },
+    {
+      "path": "data/smd/train/machine-2-3.txt",
+      "size_bytes": 8124984
+    },
+    {
+      "path": "data/smd/train/machine-2-4.txt",
+      "size_bytes": 8125327
+    },
+    {
+      "path": "data/smd/train/machine-2-5.txt",
+      "size_bytes": 8124984
+    },
+    {
+      "path": "data/smd/train/machine-2-6.txt",
+      "size_bytes": 9858849
+    },
+    {
+      "path": "data/smd/train/machine-2-7.txt",
+      "size_bytes": 8127728
+    },
+    {
+      "path": "data/smd/train/machine-2-8.txt",
+      "size_bytes": 8129786
+    },
+    {
+      "path": "data/smd/train/machine-2-9.txt",
+      "size_bytes": 9851646
+    },
+    {
+      "path": "data/smd/train/machine-3-1.txt",
+      "size_bytes": 9844100
+    },
+    {
+      "path": "data/smd/train/machine-3-10.txt",
+      "size_bytes": 8126356
+    },
+    {
+      "path": "data/smd/train/machine-3-11.txt",
+      "size_bytes": 9842385
+    },
+    {
+      "path": "data/smd/train/machine-3-2.txt",
+      "size_bytes": 8129786
+    },
+    {
+      "path": "data/smd/train/machine-3-3.txt",
+      "size_bytes": 8130129
+    },
+    {
+      "path": "data/smd/train/machine-3-4.txt",
+      "size_bytes": 8124641
+    },
+    {
+      "path": "data/smd/train/machine-3-5.txt",
+      "size_bytes": 8125670
+    },
+    {
+      "path": "data/smd/train/machine-3-6.txt",
+      "size_bytes": 9853018
+    },
+    {
+      "path": "data/smd/train/machine-3-7.txt",
+      "size_bytes": 9845815
+    },
+    {
+      "path": "data/smd/train/machine-3-8.txt",
+      "size_bytes": 9845129
+    },
+    {
+      "path": "data/smd/train/machine-3-9.txt",
+      "size_bytes": 9848559
+    },
+    {
+      "path": "data/synthetic_fan/fan_X.npy",
+      "size_bytes": 4320128
+    },
+    {
+      "path": "data/synthetic_fan/fan_y.npy",
+      "size_bytes": 24128
+    },
+    {
+      "path": "deploy_all.py",
+      "size_bytes": 12333
+    },
+    {
+      "path": "docker-compose.yml",
+      "size_bytes": 1363
+    },
+    {
+      "path": "docs/VIVA_MASTER_GUIDE.md",
+      "size_bytes": 55724
+    },
+    {
+      "path": "docs/demo_script.md",
+      "size_bytes": 6594
+    },
+    {
+      "path": "docs/device_roles.md",
+      "size_bytes": 7692
+    },
+    {
+      "path": "docs/implementation_plan.md",
+      "size_bytes": 42605
+    },
+    {
+      "path": "docs/literature_review.md",
+      "size_bytes": 6029
+    },
+    {
+      "path": "docs/master_execution_guide.md",
+      "size_bytes": 7521
+    },
+    {
+      "path": "docs/project_viva_walkthrough.md",
+      "size_bytes": 30644
+    },
+    {
+      "path": "docs/rpi4_setup_guide.md",
+      "size_bytes": 7287
+    },
+    {
+      "path": "docs/sensor_shopping_list.md",
+      "size_bytes": 9976
+    },
+    {
+      "path": "docs/tailscale_acl_policy.json",
+      "size_bytes": 2464
+    },
+    {
+      "path": "logs/adaptive_thresholds.log",
+      "size_bytes": 2996
+    },
+    {
+      "path": "logs/auto_retrain.log",
+      "size_bytes": 1508
+    },
+    {
+      "path": "logs/chat_api.log",
+      "size_bytes": 4076
+    },
+    {
+      "path": "logs/inference_server.log",
+      "size_bytes": 2362793
+    },
+    {
+      "path": "notebooks/01_eda_backblaze.ipynb",
+      "size_bytes": 2344
+    },
+    {
+      "path": "patient_package/INSTALL_DEPS.bat",
+      "size_bytes": 1285
+    },
+    {
+      "path": "patient_package/README.md",
+      "size_bytes": 2533
+    },
+    {
+      "path": "patient_package/START_PATIENT.bat",
+      "size_bytes": 2174
+    },
+    {
+      "path": "patient_package/auto_discovery.py",
+      "size_bytes": 20595
+    },
+    {
+      "path": "patient_package/collector_v2.py",
+      "size_bytes": 17066
+    },
+    {
+      "path": "patient_package/mqtt_publisher_v2.py",
+      "size_bytes": 10714
+    },
+    {
+      "path": "patient_package/plugins/__init__.py",
+      "size_bytes": 3227
+    },
+    {
+      "path": "patient_package/plugins/cpu_plugin.py",
+      "size_bytes": 19688
+    },
+    {
+      "path": "patient_package/plugins/gpu_nvidia_plugin.py",
+      "size_bytes": 556
+    },
+    {
+      "path": "patient_package/plugins/gpu_plugin.py",
+      "size_bytes": 19231
+    },
+    {
+      "path": "patient_package/plugins/memory_plugin.py",
+      "size_bytes": 10119
+    },
+    {
+      "path": "patient_package/plugins/motherboard_plugin.py",
+      "size_bytes": 10098
+    },
+    {
+      "path": "patient_package/plugins/psu_fan_plugin.py",
+      "size_bytes": 16267
+    },
+    {
+      "path": "patient_package/plugins/storage_plugin.py",
+      "size_bytes": 16546
+    },
+    {
+      "path": "patient_package/requirements.txt",
+      "size_bytes": 197
+    },
+    {
+      "path": "patient_package/server/__init__.py",
+      "size_bytes": 3
+    },
+    {
+      "path": "patient_package/server/telemetry_agent/__init__.py",
+      "size_bytes": 3
+    },
+    {
+      "path": "patient_package/server/training/__init__.py",
+      "size_bytes": 3
+    },
+    {
+      "path": "patient_package/server/training/feature_schema.py",
+      "size_bytes": 6114
+    },
+    {
+      "path": "patient_package/server/training/feature_schema_v2.py",
+      "size_bytes": 13199
+    },
+    {
+      "path": "patient_package/server_identity.py",
+      "size_bytes": 6857
+    },
+    {
+      "path": "patient_package/start_patient.sh",
+      "size_bytes": 1531
+    },
+    {
+      "path": "requirements_dev.txt",
+      "size_bytes": 503
+    },
+    {
+      "path": "requirements_patient.txt",
+      "size_bytes": 213
+    },
+    {
+      "path": "requirements_server.txt",
+      "size_bytes": 897
+    },
+    {
+      "path": "run_dummy_simulator.py",
+      "size_bytes": 6560
+    },
+    {
+      "path": "scripts/Install-Patient-Windows.ps1",
+      "size_bytes": 10113
+    },
+    {
+      "path": "scripts/install_patient_linux.sh",
+      "size_bytes": 7021
+    },
+    {
+      "path": "scripts/run_remote_patient.py",
+      "size_bytes": 5299
+    },
+    {
+      "path": "scripts/start_rpi4_service.py",
+      "size_bytes": 2572
+    },
+    {
+      "path": "scripts/start_test_dashboard.py",
+      "size_bytes": 6250
+    },
+    {
+      "path": "server/deep_analysis/adaptive_thresholds.py",
+      "size_bytes": 15497
+    },
+    {
+      "path": "server/deep_analysis/chat_api.py",
+      "size_bytes": 6991
+    },
+    {
+      "path": "server/deep_analysis/cloud_fusion.py",
+      "size_bytes": 8332
+    },
+    {
+      "path": "server/deep_analysis/inference_server.py",
+      "size_bytes": 34801
+    },
+    {
+      "path": "server/deep_analysis/model_registry.py",
+      "size_bytes": 14169
+    },
+    {
+      "path": "server/deep_analysis/retrain_daemon.py",
+      "size_bytes": 14388
+    },
+    {
+      "path": "server/deep_analysis/schema.sql",
+      "size_bytes": 7828
+    },
+    {
+      "path": "server/deep_analysis/shap_explainer.py",
+      "size_bytes": 2415
+    },
+    {
+      "path": "server/deep_analysis/tsdb_writer.py",
+      "size_bytes": 20172
+    },
+    {
+      "path": "server/deployment/__init__.py",
+      "size_bytes": 73
+    },
+    {
+      "path": "server/deployment/deploy_model.py",
+      "size_bytes": 7244
+    },
+    {
+      "path": "server/models/classifier_fp32.h5",
+      "size_bytes": 1511304
+    },
+    {
+      "path": "server/models/classifier_scaler.pkl",
+      "size_bytes": 1255
+    },
+    {
+      "path": "server/models/fan_bearing_cnn_fp32.keras",
+      "size_bytes": 239935
+    },
+    {
+      "path": "server/models/fan_bearing_cnn_int8.tflite",
+      "size_bytes": 27840
+    },
+    {
+      "path": "server/models/fan_bearing_cnn_metadata.json",
+      "size_bytes": 1008
+    },
+    {
+      "path": "server/models/fan_bearing_scaler.joblib",
+      "size_bytes": 639
+    },
+    {
+      "path": "server/models/iso_forest.pkl",
+      "size_bytes": 1044464
+    },
+    {
+      "path": "server/models/lstm_ae.h5",
+      "size_bytes": 899536
+    },
+    {
+      "path": "server/models/lstm_ae_scaler.pkl",
+      "size_bytes": 1255
+    },
+    {
+      "path": "server/models/madgan_discriminator.pt",
+      "size_bytes": 164142
+    },
+    {
+      "path": "server/models/madgan_generator.pt",
+      "size_bytes": 143724
+    },
+    {
+      "path": "server/models/madgan_metadata.json",
+      "size_bytes": 559
+    },
+    {
+      "path": "server/models/madgan_scaler.joblib",
+      "size_bytes": 1495
+    },
+    {
+      "path": "server/models/retrain_daemon_state.json",
+      "size_bytes": 262
+    },
+    {
+      "path": "server/models/stgcn_adjacency.npy",
+      "size_bytes": 5312
+    },
+    {
+      "path": "server/models/stgcn_anomaly.pt",
+      "size_bytes": 64654
+    },
+    {
+      "path": "server/models/stgcn_candidate_int8.tflite",
+      "size_bytes": 36
+    },
+    {
+      "path": "server/models/stgcn_metadata.json",
+      "size_bytes": 1370
+    },
+    {
+      "path": "server/models/stgcn_scaler.joblib",
+      "size_bytes": 1447
+    },
+    {
+      "path": "server/models/tcn_storage_rul_fp32.keras",
+      "size_bytes": 1409237
+    },
+    {
+      "path": "server/models/tcn_storage_rul_int8.tflite",
+      "size_bytes": 144344
+    },
+    {
+      "path": "server/models/tcn_storage_rul_metadata.json",
+      "size_bytes": 1103
+    },
+    {
+      "path": "server/models/tcn_storage_scaler.joblib",
+      "size_bytes": 775
+    },
+    {
+      "path": "server/models/xgboost_hdd.pkl",
+      "size_bytes": 2187728
+    },
+    {
+      "path": "server/optimization/quantize_model.py",
+      "size_bytes": 10898
+    },
+    {
+      "path": "server/training/asymmetric_loss.py",
+      "size_bytes": 1433
+    },
+    {
+      "path": "server/training/auto_labeler.py",
+      "size_bytes": 11830
+    },
+    {
+      "path": "server/training/auto_retrain.py",
+      "size_bytes": 10657
+    },
+    {
+      "path": "server/training/datasets/__init__.py",
+      "size_bytes": 844
+    },
+    {
+      "path": "server/training/datasets/alibaba_dram_loader.py",
+      "size_bytes": 8990
+    },
+    {
+      "path": "server/training/datasets/alibaba_gpu_trace_loader.py",
+      "size_bytes": 8281
+    },
+    {
+      "path": "server/training/datasets/alibaba_ssd_loader.py",
+      "size_bytes": 5451
+    },
+    {
+      "path": "server/training/datasets/backblaze_loader.py",
+      "size_bytes": 9919
+    },
+    {
+      "path": "server/training/datasets/delta_gpu_xid_loader.py",
+      "size_bytes": 6158
+    },
+    {
+      "path": "server/training/datasets/nasa_cmapss_loader.py",
+      "size_bytes": 5027
+    },
+    {
+      "path": "server/training/datasets/schema_harmonization.py",
+      "size_bytes": 16826
+    },
+    {
+      "path": "server/training/download_datasets.py",
+      "size_bytes": 2401
+    },
+    {
+      "path": "server/training/feature_engineering.py",
+      "size_bytes": 5160
+    },
+    {
+      "path": "server/training/loss.py",
+      "size_bytes": 9948
+    },
+    {
+      "path": "server/training/retrain_manager.py",
+      "size_bytes": 9848
+    },
+    {
+      "path": "server/training/synthetic_failure_gen.py",
+      "size_bytes": 5891
+    },
+    {
+      "path": "server/training/train_adapter.py",
+      "size_bytes": 11756
+    },
+    {
+      "path": "server/training/train_classifier.py",
+      "size_bytes": 18426
+    },
+    {
+      "path": "server/training/train_fan_cnn.py",
+      "size_bytes": 10441
+    },
+    {
+      "path": "server/training/train_iso_forest.py",
+      "size_bytes": 4121
+    },
+    {
+      "path": "server/training/train_lstm_ae.py",
+      "size_bytes": 13041
+    },
+    {
+      "path": "server/training/train_madgan.py",
+      "size_bytes": 9868
+    },
+    {
+      "path": "server/training/train_stgcn.py",
+      "size_bytes": 23518
+    },
+    {
+      "path": "server/training/train_tcn_storage.py",
+      "size_bytes": 20193
+    },
+    {
+      "path": "server/training/train_xgboost_hdd.py",
+      "size_bytes": 3226
+    },
+    {
+      "path": "server/training/ttf_labels.py",
+      "size_bytes": 3777
+    },
+    {
+      "path": "setup_rpi4_continue.py",
+      "size_bytes": 11757
+    },
+    {
+      "path": "setup_rpi4_fresh.py",
+      "size_bytes": 11975
+    },
+    {
+      "path": "start_dummy_simulator.bat",
+      "size_bytes": 644
+    },
+    {
+      "path": "start_loq_cloud.bat",
+      "size_bytes": 1911
+    },
+    {
+      "path": "start_patient_ideapad_from_loq.bat",
+      "size_bytes": 790
+    },
+    {
+      "path": "start_patient_ideapad_local.bat",
+      "size_bytes": 996
+    },
+    {
+      "path": "start_patient_loq.bat",
+      "size_bytes": 780
+    },
+    {
+      "path": "start_rpi4.bat",
+      "size_bytes": 346
+    },
+    {
+      "path": "start_tsdb_writer.bat",
+      "size_bytes": 679
+    },
+    {
+      "path": "tests/test_apis_end_to_end.py",
+      "size_bytes": 6732
+    },
+    {
+      "path": "tests/test_dashboard_revamp.py",
+      "size_bytes": 5609
+    },
+    {
+      "path": "tests/test_e2e_pipeline.py",
+      "size_bytes": 2642
+    },
+    {
+      "path": "tests/test_enterprise_portfolio_datasets.py",
+      "size_bytes": 3959
+    },
+    {
+      "path": "tests/test_phase1_hardening.py",
+      "size_bytes": 9757
+    },
+    {
+      "path": "tests/test_phase4_plugins.py",
+      "size_bytes": 5284
+    },
+    {
+      "path": "tests/test_phase5_survival_ml.py",
+      "size_bytes": 9022
+    }
+  ],
+  "rpi4_only_files": [
+    {
+      "path": "audit/manifest_rpi4.json",
+      "size_bytes": 12591
+    },
+    {
+      "path": "edge/__init__.py",
+      "size_bytes": 0
+    },
+    {
+      "path": "edge/baselines/4c007433-db55-4309-8b41-2de057e9449b.json",
+      "size_bytes": 15725
+    },
+    {
+      "path": "edge/baselines/76a82f6f-4498-4914-b960-3295224ec28b.json",
+      "size_bytes": 15046
+    },
+    {
+      "path": "logs/adaptive_baseline.log",
+      "size_bytes": 3117
+    },
+    {
+      "path": "logs/edge_inference.log",
+      "size_bytes": 815560
+    },
+    {
+      "path": "logs/edge_main.log",
+      "size_bytes": 5987489
+    },
+    {
+      "path": "logs/edge_main.log.1",
+      "size_bytes": 10485568
+    },
+    {
+      "path": "logs/mqtt_handler.log",
+      "size_bytes": 236685
+    },
+    {
+      "path": "server/__init__.py",
+      "size_bytes": 0
+    },
+    {
+      "path": "server/telemetry_agent/__init__.py",
+      "size_bytes": 0
+    },
+    {
+      "path": "server/training/__init__.py",
+      "size_bytes": 0
+    }
+  ]
+}

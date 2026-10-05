@@ -1,0 +1,30 @@
+{
+  "model_name": "TCN Storage RUL",
+  "phase": "G3.3 + G3.6",
+  "architecture": "TCN (4 dilated causal conv layers, 64 filters, kernel=3)",
+  "input_shape": [
+    30,
+    8
+  ],
+  "features": [
+    "smart_5_raw",
+    "smart_9_raw",
+    "smart_187_raw",
+    "smart_188_raw",
+    "smart_194_raw",
+    "smart_197_raw",
+    "smart_198_raw",
+    "smart_241_raw"
+  ],
+  "output": "RUL in days (0-90)",
+  "training_data": "Backblaze Q1 2023",
+  "val_mae_days": 15.942176818847656,
+  "val_loss": 588.1690063476562,
+  "fp32_path": "C:\\Users\\LOQ\\Documents\\Antigravity\\Predictive maintenance for Server\\server\\training\\..\\models\\tcn_storage_rul_fp32.keras",
+  "tflite_path": "C:\\Users\\LOQ\\Documents\\Antigravity\\Predictive maintenance for Server\\server\\training\\..\\models\\tcn_storage_rul_int8.tflite",
+  "tflite_size_kb": 140.9609375,
+  "scaler_path": "C:\\Users\\LOQ\\Documents\\Antigravity\\Predictive maintenance for Server\\server\\training\\..\\models\\tcn_storage_scaler.joblib",
+  "trained_at": "2026-09-13T10:32:35",
+  "epochs_run": 22,
+  "best_epoch": 12
+}

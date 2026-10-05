@@ -1,0 +1,21 @@
+# Grafana datasource provisioning for TimescaleDB
+apiVersion: 1
+
+datasources:
+  - name: TimescaleDB
+    type: postgres
+    access: proxy
+    url: timescaledb:5432
+    database: predictive_maintenance
+    user: pm_user
+    secureJsonData:
+      password: pm_edge_2026
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+      postgresVersion: 1600
+      timescaledb: true
+    isDefault: true
+    editable: true

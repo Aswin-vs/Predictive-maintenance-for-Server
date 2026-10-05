@@ -1,0 +1,51 @@
+# ============================================================
+#  Predictive Maintenance — Docker Compose
+#  TimescaleDB (PostgreSQL 16) + Grafana
+#  Runs on LOQ (Hospital/Cloud Node)
+# ============================================================
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: pm-timescaledb
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: pm_user
+      POSTGRES_PASSWORD: pm_edge_2026
+      POSTGRES_DB: predictive_maintenance
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pm_user -d predictive_maintenance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pm-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: pm_grafana_2026
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  timescaledb_data:
+    driver: local
+  grafana_data:
+    driver: local

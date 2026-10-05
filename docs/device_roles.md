@@ -75,7 +75,7 @@ External sensors (DHT22, ADXL345, MAX4466) are placed **on or near this device**
 | SHAP Explainer | Why did the model flag this? Feature importance for operators |
 | Model Training | Trains all models on GPU (1D-CNN, LSTM-AE, XGBoost) |
 | Grafana + InfluxDB | Detailed engineer dashboard — raw telemetry, model metrics, every detail |
-| **Ollama LLM (Llama 3.1 8B)** | **AI chatbot with RAG — answers questions using prediction data + SHAP. ~5GB VRAM.** |
+| **Ollama LLM (Qwen 3.5 4B)** | **AI chatbot with RAG — answers questions using prediction data + SHAP. 3.1GB VRAM (100% GPU).** |
 | Chat API (/chat endpoint) | FastAPI endpoint that RPi4 dashboard calls to get LLM responses |
 | Model Retraining | Periodically retrains with new data from the server |
 

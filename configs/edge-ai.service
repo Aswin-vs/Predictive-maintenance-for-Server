@@ -1,0 +1,33 @@
+[Unit]
+Description=Edge-AI Predictive Maintenance (RPi4)
+Documentation=https://github.com/your-repo/predictive-maintenance
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/predictive-maintenance
+ExecStart=/home/pi/predictive-maintenance/venv/bin/python edge/main.py --broker 127.0.0.1 --port 1883 --dashboard-port 8080
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Environment
+EnvironmentFile=-/home/pi/predictive-maintenance/configs/network.env
+Environment=MQTT_BROKER=127.0.0.1
+Environment=MQTT_PORT=1883
+Environment=CLOUD_OFFLOAD_URL=http://loq.tail1ab139.ts.net:8000/api/offload
+Environment=CLOUD_CHAT_URL=http://loq.tail1ab139.ts.net:8001/api/chat
+Environment=API_KEY=pm-edge-ac0008caeb077588ba481e57e1bde8af
+Environment=PYTHONUNBUFFERED=1
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=edge-ai
+
+[Install]
+WantedBy=multi-user.target

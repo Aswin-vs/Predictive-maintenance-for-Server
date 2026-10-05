@@ -1,0 +1,303 @@
+{
+  "hostname": "rpi",
+  "platform": "linux",
+  "generated_at": "2026-09-25T18:41:33.614318+00:00",
+  "total_files": 59,
+  "files": {
+    "requirements_edge.txt": {
+      "size_bytes": 678,
+      "mtime_utc": "2026-09-25T13:54:47.410503+00:00",
+      "sha256": "ad965e759c9df9b0153f52c3a2fcf37f73496478e0e64280c24807dd77a098a8"
+    },
+    "server/__init__.py": {
+      "size_bytes": 0,
+      "mtime_utc": "2026-09-10T20:26:55.608835+00:00",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "server/training/__init__.py": {
+      "size_bytes": 0,
+      "mtime_utc": "2026-09-10T20:26:55.612834+00:00",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "server/training/feature_schema.py": {
+      "size_bytes": 6114,
+      "mtime_utc": "2026-09-25T18:40:38.517368+00:00",
+      "sha256": "1c77216f45effabf70ced4e0a0af32500c9cc273252a1e187858a2f0cb5c460c"
+    },
+    "server/training/feature_schema_v2.py": {
+      "size_bytes": 13199,
+      "mtime_utc": "2026-09-25T18:40:39.053359+00:00",
+      "sha256": "e017a5e35015606d0be88aaf0943f1d13423caf8de6d29f8bbf97f544e461f7a"
+    },
+    "server/utils/__init__.py": {
+      "size_bytes": 23,
+      "mtime_utc": "2026-09-25T18:41:23.040619+00:00",
+      "sha256": "e2d8d37508ce6fe30d768eadfd0738bfb7f70f5aa8ba105122f213d74bc293ab"
+    },
+    "server/utils/auth.py": {
+      "size_bytes": 1610,
+      "mtime_utc": "2026-09-10T20:26:55.564835+00:00",
+      "sha256": "5510589c7f8c76bdf4a03376629abfb7e0884c944a9c2951aece1c24a4809260"
+    },
+    "server/utils/logger.py": {
+      "size_bytes": 2746,
+      "mtime_utc": "2026-09-10T20:26:55.548836+00:00",
+      "sha256": "41ca47b84169d6b12f628b76ddc8e374c1ac33d6bb765bca7915322ceb774c90"
+    },
+    "server/telemetry_agent/__init__.py": {
+      "size_bytes": 0,
+      "mtime_utc": "2026-09-11T07:55:25.132580+00:00",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "server/telemetry_agent/auto_discovery.py": {
+      "size_bytes": 20595,
+      "mtime_utc": "2026-09-11T07:55:25.228579+00:00",
+      "sha256": "0bb577163b70515eaae316078b81ebdb96b36c8e85818a2986583c0d83aa504e"
+    },
+    "server/telemetry_agent/collector_v2.py": {
+      "size_bytes": 17066,
+      "mtime_utc": "2026-09-25T18:40:39.565350+00:00",
+      "sha256": "f660a190642588cd9f0586c9a52472a1a0d20e083e0c65275a850a0a391d7ede"
+    },
+    "server/telemetry_agent/mqtt_publisher_v2.py": {
+      "size_bytes": 13168,
+      "mtime_utc": "2026-09-25T18:40:40.089342+00:00",
+      "sha256": "7c4c2f743196448e10e8f16bcff92f179348a69c31908a606f27dce2d14063dc"
+    },
+    "server/telemetry_agent/server_identity.py": {
+      "size_bytes": 6857,
+      "mtime_utc": "2026-09-11T07:55:25.316578+00:00",
+      "sha256": "0d7df7aec98e92d83879ef372ff96bb5764c2c928b948118a97b137ac48abb83"
+    },
+    "server/telemetry_agent/plugins/__init__.py": {
+      "size_bytes": 3227,
+      "mtime_utc": "2026-09-25T18:40:40.613333+00:00",
+      "sha256": "330fc85608c0d44d7674daa4f3a43124f23cabd856cc08ed899ee98b99809057"
+    },
+    "server/telemetry_agent/plugins/cpu_plugin.py": {
+      "size_bytes": 19688,
+      "mtime_utc": "2026-09-25T18:40:41.137324+00:00",
+      "sha256": "8d5bf7f316c5e203853ca9553e5ebdff09cf5e62d3730a0a914a39fa4676db04"
+    },
+    "server/telemetry_agent/plugins/gpu_nvidia_plugin.py": {
+      "size_bytes": 556,
+      "mtime_utc": "2026-09-25T18:40:42.309304+00:00",
+      "sha256": "77b9487d19616b8d8e77d5cd0a8ecd95f9b75f776827f3b45c3e1f5fef841069"
+    },
+    "server/telemetry_agent/plugins/gpu_plugin.py": {
+      "size_bytes": 19231,
+      "mtime_utc": "2026-09-25T18:40:41.661315+00:00",
+      "sha256": "6b04be11c6e29fdfe0ce07a950b6b018f31a9d9bf2bc9110bcf91c9e30af8ccb"
+    },
+    "server/telemetry_agent/plugins/memory_plugin.py": {
+      "size_bytes": 10119,
+      "mtime_utc": "2026-09-25T18:40:43.785280+00:00",
+      "sha256": "63c91548f4db9e7ba34287b7e1e4ad679aae9991ba662844195f4de2ec8ece30"
+    },
+    "server/telemetry_agent/plugins/motherboard_plugin.py": {
+      "size_bytes": 10098,
+      "mtime_utc": "2026-09-25T18:40:42.729297+00:00",
+      "sha256": "ab55ce268137d03d6659662c170e6157ef84179b88bc26609e93c48200c5daae"
+    },
+    "server/telemetry_agent/plugins/psu_fan_plugin.py": {
+      "size_bytes": 16267,
+      "mtime_utc": "2026-09-25T18:40:44.301271+00:00",
+      "sha256": "6faea26881ad7966fa7130c881e68a5020122e48d41669f3ffcc82d46ece824c"
+    },
+    "server/telemetry_agent/plugins/storage_plugin.py": {
+      "size_bytes": 16546,
+      "mtime_utc": "2026-09-25T18:40:43.257288+00:00",
+      "sha256": "14d152c493928fd5f76a84243b588a0273b2c2e9fcf4a1fb19b3066ef063f723"
+    },
+    "edge/__init__.py": {
+      "size_bytes": 0,
+      "mtime_utc": "2026-09-10T20:26:55.604835+00:00",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "edge/adaptive_baseline.py": {
+      "size_bytes": 25434,
+      "mtime_utc": "2026-09-25T18:40:29.117526+00:00",
+      "sha256": "c32503409aa7a7da345291d6ca67582aaf4f2b66e009d66d33eb4f01731f2935"
+    },
+    "edge/api_server.py": {
+      "size_bytes": 22540,
+      "mtime_utc": "2026-09-25T18:40:25.985578+00:00",
+      "sha256": "e549aa8d7a3b9e5b2128a38d0e2d3ceda1f3b53cece261235ac9baa6dd5996b1"
+    },
+    "edge/edge_inference.py": {
+      "size_bytes": 11286,
+      "mtime_utc": "2026-09-25T18:40:26.493570+00:00",
+      "sha256": "97d8dfbfed59c41be51ce4d90c3240cb59751994aa87141054da9dca47e8423b"
+    },
+    "edge/edge_logger.py": {
+      "size_bytes": 1554,
+      "mtime_utc": "2026-09-25T18:40:28.573535+00:00",
+      "sha256": "f673cee0e4f7d29442bd0cffd2fa4037bd0e3f2514efc6d64df60097eb240c39"
+    },
+    "edge/ensemble_decision.py": {
+      "size_bytes": 11620,
+      "mtime_utc": "2026-09-25T18:40:30.153508+00:00",
+      "sha256": "220f3fab4336625f1bd1f01e031db2e2db9b46cd0ac5b47676f30d53c1fceaa8"
+    },
+    "edge/local_store.py": {
+      "size_bytes": 10764,
+      "mtime_utc": "2026-09-25T18:40:27.013561+00:00",
+      "sha256": "5bceda33f4b260b9d02a9cae77fa4c98ee235f2e07c705e1878b57b2ea5a9756"
+    },
+    "edge/main.py": {
+      "size_bytes": 37328,
+      "mtime_utc": "2026-09-25T18:40:25.537585+00:00",
+      "sha256": "64092ae85e76d29877811a1a8c13eb5455b9b51cc263ac49d2ffc192bb98a255"
+    },
+    "edge/model_router.py": {
+      "size_bytes": 19414,
+      "mtime_utc": "2026-09-25T18:40:29.633517+00:00",
+      "sha256": "b314cc77d51cad33db730ff38de104c9d63359253906cf366912e9354cc786dd"
+    },
+    "edge/mqtt_handler.py": {
+      "size_bytes": 9135,
+      "mtime_utc": "2026-09-25T18:40:27.537552+00:00",
+      "sha256": "48d78d495791d8fac0f2d651798da52c9ff14f8833fe6f317c5177cce20e8453"
+    },
+    "edge/sensor_reader.py": {
+      "size_bytes": 17987,
+      "mtime_utc": "2026-09-25T18:40:28.077543+00:00",
+      "sha256": "dc5734eb5785f2d47199156e76d01d28328e8cd865c2a4e0ab0373ec3a8455d8"
+    },
+    "edge/baselines/4c007433-db55-4309-8b41-2de057e9449b.json": {
+      "size_bytes": 15725,
+      "mtime_utc": "2026-09-25T05:41:20.488167+00:00",
+      "sha256": "749d71f363fc6a930cc2dde016b95756e3723eb5192a8c893b198b0f27d8098b"
+    },
+    "edge/baselines/76a82f6f-4498-4914-b960-3295224ec28b.json": {
+      "size_bytes": 15046,
+      "mtime_utc": "2026-09-25T18:36:10.653893+00:00",
+      "sha256": "1e13fbc8885021852b5729fb50faba0f3f9fd9a286a451b81a87a83dbf059c96"
+    },
+    "edge/data/edge_cache.db": {
+      "size_bytes": 42852352,
+      "mtime_utc": "2026-09-25T18:41:25.212582+00:00",
+      "sha256": "87046b3902a866252288995d53a5cfe025654883db8205cec6a6a3d78c6bba8a"
+    },
+    "edge/models/classifier_int8.tflite": {
+      "size_bytes": 135744,
+      "mtime_utc": "2026-09-25T18:40:30.901496+00:00",
+      "sha256": "0829e6f76b8e8e162242b4131cec74486a092eb28532f6eff1f29a56c08f11d9"
+    },
+    "edge/models/classifier_scaler.pkl": {
+      "size_bytes": 1255,
+      "mtime_utc": "2026-09-25T18:40:31.361488+00:00",
+      "sha256": "482fb0734b5200dee93c3eef13662eaacc7b5fbec9aa2a398457c72773c7a942"
+    },
+    "edge/models/fan_bearing_cnn_int8.tflite": {
+      "size_bytes": 27840,
+      "mtime_utc": "2026-09-25T18:40:34.089442+00:00",
+      "sha256": "90f8865eeca60b3eb4d5096b2de3894e5f9596052b4673361d58fbb83009e0ff"
+    },
+    "edge/models/fan_bearing_scaler.joblib": {
+      "size_bytes": 639,
+      "mtime_utc": "2026-09-25T18:40:34.745431+00:00",
+      "sha256": "e49c47a765b98e8a545b92736c464b34d0b2ba81325920c6f5c91243a70f7c7a"
+    },
+    "edge/models/iso_forest.pkl": {
+      "size_bytes": 1044464,
+      "mtime_utc": "2026-09-25T18:40:33.569451+00:00",
+      "sha256": "575157112e552a885c96e66433c4c2064a2702cfb42ac4f831921578a68516d1"
+    },
+    "edge/models/stgcn_int8.tflite": {
+      "size_bytes": 9888,
+      "mtime_utc": "2026-09-25T18:40:36.421403+00:00",
+      "sha256": "9b09fc120e26f317b3faeef03830ca25caf309976de4de0f2adbeffc35616528"
+    },
+    "edge/models/tcn_storage_rul_int8.tflite": {
+      "size_bytes": 144344,
+      "mtime_utc": "2026-09-25T18:40:35.385421+00:00",
+      "sha256": "8a0314cf0bcd73aa94d96921ac52a956cd19def263b5127b1db7319dddd31518"
+    },
+    "edge/models/tcn_storage_scaler.joblib": {
+      "size_bytes": 775,
+      "mtime_utc": "2026-09-25T18:40:35.981411+00:00",
+      "sha256": "a321ceca9b88cd001ed1698de8945607167e28da2c6303b0c6cef01be77f7970"
+    },
+    "audit/generate_manifest.py": {
+      "size_bytes": 4055,
+      "mtime_utc": "2026-09-25T18:41:32.684456+00:00",
+      "sha256": "aa7192472d56cb591a64025dfa777f698781e37f691d5b1097a976c47991c36b"
+    },
+    "audit/manifest_rpi4.json": {
+      "size_bytes": 12591,
+      "mtime_utc": "2026-09-25T18:41:16.483876+00:00",
+      "sha256": "af8137d06b94f73a593bff13b0b2f77c3824c8da45c3069db65d5fd7980b628c"
+    },
+    "logs/adaptive_baseline.log": {
+      "size_bytes": 3117,
+      "mtime_utc": "2026-09-25T18:41:02.008973+00:00",
+      "sha256": "5f722e98c2839d47632f8d010735d47d9b5f25a2cd70bb242896809ab46e2973"
+    },
+    "logs/edge_api.log": {
+      "size_bytes": 0,
+      "mtime_utc": "2026-09-11T07:55:31.584528+00:00",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "logs/edge_inference.log": {
+      "size_bytes": 815560,
+      "mtime_utc": "2026-09-25T18:40:54.785095+00:00",
+      "sha256": "b25854139d35b566740766bb889f48750c7571108a447fef9b8b4c9d7548fec8"
+    },
+    "logs/edge_main.log": {
+      "size_bytes": 5987489,
+      "mtime_utc": "2026-09-25T18:41:25.224582+00:00",
+      "sha256": "8da586903dff648a178381252192ba33e17cd548aba4e6065975f94787d71b05"
+    },
+    "logs/edge_main.log.1": {
+      "size_bytes": 10485568,
+      "mtime_utc": "2026-09-21T07:29:42.658335+00:00",
+      "sha256": "a6609dfb1c5e33a5357ddada27e220976d9baceb1e332642da39fdca1b820610"
+    },
+    "logs/mqtt_handler.log": {
+      "size_bytes": 236685,
+      "mtime_utc": "2026-09-25T18:41:25.224582+00:00",
+      "sha256": "9ce37b54ad34c40d797878c990c2264542b2ea031b853c5027213b26c69e6825"
+    },
+    "configs/api_keys.json": {
+      "size_bytes": 231,
+      "mtime_utc": "2026-09-20T06:56:14.118253+00:00",
+      "sha256": "62d8fffb6efc96eb7d6af2bd123a54c3fc876e2a5bafcf10ddf41438da3d8956"
+    },
+    "configs/edge-ai.service": {
+      "size_bytes": 983,
+      "mtime_utc": "2026-09-25T18:40:46.105241+00:00",
+      "sha256": "d5dfac8d2c3e049237418c01f8a0e49eb9937459b950aae4548bd6a9388cd94c"
+    },
+    "configs/edge.env": {
+      "size_bytes": 586,
+      "mtime_utc": "2026-09-25T18:40:44.949260+00:00",
+      "sha256": "76033d935c3a606547a4baa03a387913fa2438be0f5ddc8d875862a110247e8b"
+    },
+    "configs/network.env": {
+      "size_bytes": 619,
+      "mtime_utc": "2026-09-25T18:40:45.521250+00:00",
+      "sha256": "0126a5dfbe22a000981ae5178c4ea4f9b90b386ac02d986c3cffc7a7923ddbcd"
+    },
+    "dashboard/index.html": {
+      "size_bytes": 62709,
+      "mtime_utc": "2026-09-25T18:40:36.969394+00:00",
+      "sha256": "bfd54a95fd429b9664b73de3a037afa8e55c8988a1730d0ccf7b6a5d0240719c"
+    },
+    "dashboard/assets/app.js": {
+      "size_bytes": 65215,
+      "mtime_utc": "2026-09-25T18:40:38.013376+00:00",
+      "sha256": "2f1b990e129bce1895d40e0c52c47e97cbeec203ef68d5e9a45f764f2edabc01"
+    },
+    "dashboard/assets/style.css": {
+      "size_bytes": 48945,
+      "mtime_utc": "2026-09-25T18:40:37.477385+00:00",
+      "sha256": "68112cc47d42270a0d09b6c9db4759766dbc9a58a40b18ad3c48b0953c02293f"
+    },
+    "dashboard/assets/fonts/inter.css": {
+      "size_bytes": 916,
+      "mtime_utc": "2026-09-14T20:44:38.585958+00:00",
+      "sha256": "4e46319338d00d9eac1c70cfe5abbe251189f46f4a5b0a0c7b4d5c9d9335c139"
+    }
+  }
+}

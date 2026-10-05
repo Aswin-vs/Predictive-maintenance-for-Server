@@ -1,0 +1,6 @@
+# Patient-side dependencies (any monitored machine)
+# Install with: pip install -r requirements_patient.txt
+psutil>=5.9.0
+paho-mqtt>=2.0.0
+# Optional: Only needed if the machine has an NVIDIA GPU
+# pynvml>=11.5.0

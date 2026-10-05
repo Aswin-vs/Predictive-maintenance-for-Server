@@ -1,0 +1,6 @@
+# Patient Telemetry Agent — Minimal Dependencies
+# Install with: pip install -r requirements.txt
+psutil>=5.9.0
+paho-mqtt>=2.0.0
+# Optional: Only if the machine has an NVIDIA GPU
+# pynvml>=11.5.0
