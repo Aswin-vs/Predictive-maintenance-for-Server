@@ -147,11 +147,16 @@ def start_publisher_v2(broker: str, port: int, use_dummy: bool = False,
     print(f"  Hardware:      {hw_summary}")
     print(f"{'='*60}\n")
 
-    try:
-        client.connect(broker, port, 60)
-    except (ConnectionRefusedError, OSError) as e:
-        print(f"ERROR: Connection failed ({e}). Is Mosquitto running on {broker}:{port}?")
-        return
+    connected = False
+    retry_count = 0
+    while not connected:
+        try:
+            client.connect(broker, port, 60)
+            connected = True
+        except (ConnectionRefusedError, OSError) as e:
+            retry_count += 1
+            print(f"[CONNECT] Broker {broker}:{port} not reachable ({e}). Waiting for network... Retry #{retry_count} in 4s")
+            time.sleep(4)
 
     client.loop_start()
 

@@ -391,3 +391,33 @@ Our system implements enterprise-grade **Graceful Degradation**:
 2. The schema converter (`feature_schema_v2.py`) substitutes the canonical nominal baseline (45.0°C) with an explicit binary missingness mask.
 3. The downstream edge LiteRT INT8 inference models run smoothly without throwing `NoneType` arithmetic errors.
 4. The dashboard displays the real per-core CPU utilization (8 cores), RAM usage, and multi-disk layout (`C:\` 446GB, `D:\` 931GB) while transparently flagging the sensor state. This proves industrial resilience.
+
+### Q19: Can we train the predictive models with just using unhealthy/failure data? What happens mathematically?
+**Answer:** **No, training strictly on unhealthy data is fundamentally flawed:**
+1. **Classification Collapse:** Without a "Healthy" class (Class 0), a Softmax model must force-map nominal telemetry to a failure mode, causing a **100% False Positive Rate**.
+2. **The Anna Karenina Principle:** Healthy states form a tight, compact manifold; failure modes are chaotic, sparse, and open-ended. An "inverse autoencoder" trained solely on observed failures cannot generalize to novel, unseen breakdown mechanisms.
+3. **Survival Truncation Bias:** TTF models trained only on failing components ($0 \le \text{TTF} \le 30\text{d}$) collapse their dynamic range, predicting immediate breakdown even for brand-new hardware. Our architecture resolves this via **Weibull AFT Loss** supporting right-censored non-failing trajectories.
+
+### Q20: Why was 93% reported on the dashboard alongside the 99.30% 1D-CNN accuracy, and is the model overfitting?
+**Answer:**
+- **93% is the Operator Dashboard health dial baseline**, not the model accuracy.
+- **99.30% is the true empirical validation accuracy** of the 1D-CNN Multi-Task Classifier (97.57% on an un-oversampled raw test split).
+- **Overfitting Analysis:** The model is not memorizing the healthy majority. The confusion matrix proves per-class recall across every individual minority failure mode exceeds **98.4%** (HDD 99.4%, Thermal 98.4%, PSU 98.8%, Fan 98.9%, Mem 99.3%, GPU 99.3%). Splits were executed *before* scaling and *before* oversampling, preventing data leakage.
+
+### Q21: What are the exact empirical scores across the entire multi-model portfolio, and how well do they match our real hardware?
+**Answer:** Direct empirical metrics from code and metadata artifacts:
+- **1D-CNN Multi-Task:** 99.30% Validation Accuracy, 0.0560 Loss, 0.0560 TTF MAE.
+- **Fan Bearing 1D-CNN:** 100% Test Accuracy, 1.000 AUC on synthetic PWM/RPM cavitation data.
+- **XGBoost HDD:** 13.15 Days RMSE, 8.72 Days MAE, $R^2 = 0.814$ on Backblaze SMART telemetry.
+- **TCN Storage RUL:** 15.94 Days Validation MAE, 588.17 MSE (24.25 Days RMSE) across 30-day sliding windows.
+- **LSTM-Autoencoder:** 0.0949 Validation MSE, $\tau = 0.330935$ threshold on 70,414 healthy frames.
+- **Isolation Forest:** 100% sag detection ($<11.4\text{V}$), 0.038 ms edge latency.
+- **MAD-GAN & ST-GCN:** 5.14% and 4.08% F1 scores due to cross-domain dataset sparsity, mitigated by throttling their cloud fusion weights to 0.05 (token weight).
+
+### Q22: How did you discover and eliminate data leakage in preprocessing and windowing?
+**Answer:** Four critical data leakage vulnerabilities were reconciled:
+1. **BUG-N3 (Scaler Leakage):** Scalers initially fitted on the full dataset before splitting. Resolved by splitting 80/20 *first*, fitting `StandardScaler` strictly on the training partition.
+2. **G3.7-1 (Oversampling Leakage):** 10x minority oversampling was initially executed across the entire dataset. Fixed by moving oversampling strictly inside the training partition *after* the split.
+3. **BUG-02 (Graph Adjacency Contamination):** ST-GCN adjacency matrix was computed using test correlations. Fixed by deriving $A$ strictly from training partition correlations.
+4. **BUG-N7 (Temporal Window Shuffling):** Shuffling rows before slicing 10-step temporal windows destroyed chronological causality. Fixed by splitting chronologically, creating sliding windows independently, and shuffling only the completed 3D windows.
+

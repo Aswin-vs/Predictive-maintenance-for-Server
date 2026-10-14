@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDbRecords = [];
     const cache = { historyRecords: [] };
     let sensorFilterMode = 'all';
+    let _lastHwDataHash = null; // Fix A: data change detection gate
+    let _lastBaselineCache = {}; // Fix D: baseline fetch dedup (30s TTL)
 
     // Chart.js Instances
     let mainTrendsChart = null;
@@ -322,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function selectServer(id) {
         selectedServerId = id;
+        _lastHwDataHash = null; // Reset so new server gets full render
         renderSidebar();
         renderActiveServer();
         if (currentViewMode === 'complex') {
@@ -471,7 +474,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentViewMode === 'complex') {
             if (activeComplexTab === 'sensors-view') renderSensorMatrix(srv);
             else if (activeComplexTab === 'schema36-view') renderSchema36Grid(srv);
-            else if (activeComplexTab === 'hardware-view') renderHardwareDetail(srv, selectedServerId);
+            else if (activeComplexTab === 'hardware-view') {
+                // Fix A: Skip re-render if component data hasn't changed
+                const hwHash = JSON.stringify(srv.components || {}) + '|' + JSON.stringify(srv.adaptive || {});
+                if (hwHash !== _lastHwDataHash) {
+                    _lastHwDataHash = hwHash;
+                    renderHardwareDetail(srv, selectedServerId);
+                }
+            }
         }
     }
 
@@ -915,6 +925,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Fix B: Save scroll position of the scrollable parent before DOM update
+        const scrollParent = grid.closest('.tab-pane') || grid.closest('.complex-content') || grid.parentElement;
+        const savedScrollTop = scrollParent ? scrollParent.scrollTop : 0;
+
         const COMP_LABELS = { cpu: 'CPU Package', gpu: 'GPU Core', hdd: 'Storage Volumes', psu: 'PSU & Battery', ram: 'System Memory', fans: 'Cooling Fans' };
         const COMP_ICONS = { cpu: '🔲', gpu: '🎮', hdd: '💾', psu: '⚡', ram: '🧩', fans: '🌀' };
 
@@ -1083,29 +1097,80 @@ document.addEventListener('DOMContentLoaded', () => {
                     'environment/vibration_rms': { mean: telem.vibration_rms ? Math.round(telem.vibration_rms * 1000) / 1000 : 0.021, std: 0.004, unit: 'g' }
                 };
 
-                let blHtml = '';
-                for (const bk in nominalBaselines) {
-                    const bv = nominalBaselines[bk];
-                    blHtml += `<div class="bl-item"><span class="bl-key">${bk}</span><span class="bl-val">${bv.mean.toFixed(2)} ± ${bv.std.toFixed(2)} ${bv.unit || ''}</span></div>`;
-                }
-                if (bStatsEl) bStatsEl.innerHTML = blHtml;
-
-                // Enrich with endpoint data if available
-                fetch('/api/baseline/' + encodeURIComponent(serverId)).then(r => r.json()).then(data => {
-                    if (data && data.baselines && Object.keys(data.baselines).length > 0) {
-                        let dynHtml = '';
-                        for (const bk in data.baselines) {
-                            const bv = data.baselines[bk];
-                            const meanVal = typeof bv.mean === 'number' ? bv.mean.toFixed(2) : bv.mean;
-                            const stdVal = typeof bv.std === 'number' ? bv.std.toFixed(2) : bv.std;
-                            dynHtml += `<div class="bl-item"><span class="bl-key">${escapeHtml(bk)}</span><span class="bl-val">${meanVal} ± ${stdVal}</span></div>`;
+                // Fix C: Differential DOM patch — update values in-place if structure matches
+                if (bStatsEl) {
+                    const existingItems = bStatsEl.querySelectorAll('.bl-item');
+                    const blKeys = Object.keys(nominalBaselines);
+                    if (existingItems.length === blKeys.length) {
+                        // Patch in-place: update .bl-val text only (no DOM destruction)
+                        let idx = 0;
+                        for (const bk of blKeys) {
+                            const bv = nominalBaselines[bk];
+                            const valEl = existingItems[idx]?.querySelector('.bl-val');
+                            if (valEl) valEl.textContent = `${bv.mean.toFixed(2)} \u00b1 ${bv.std.toFixed(2)} ${bv.unit || ''}`;
+                            idx++;
                         }
-                        if (dynHtml && bStatsEl) bStatsEl.innerHTML = dynHtml;
+                    } else {
+                        // First render or schema changed — do full innerHTML
+                        let blHtml = '';
+                        for (const bk of blKeys) {
+                            const bv = nominalBaselines[bk];
+                            blHtml += `<div class="bl-item"><span class="bl-key">${bk}</span><span class="bl-val">${bv.mean.toFixed(2)} \u00b1 ${bv.std.toFixed(2)} ${bv.unit || ''}</span></div>`;
+                        }
+                        bStatsEl.innerHTML = blHtml;
                     }
-                }).catch(() => {});
+                }
+
+                // Fix D: Deduplicate async baseline fetch with 30s TTL cache
+                const now = Date.now();
+                const cached = _lastBaselineCache[serverId];
+                if (!cached || (now - cached.ts > 30000)) {
+                    fetch('/api/baseline/' + encodeURIComponent(serverId)).then(r => r.json()).then(data => {
+                        _lastBaselineCache[serverId] = { data, ts: Date.now() };
+                        _applyBaselineData(bStatsEl, data);
+                    }).catch(() => {});
+                } else {
+                    _applyBaselineData(bStatsEl, cached.data);
+                }
             } else {
                 baselineCard.style.display = 'none';
             }
+        }
+
+        // Fix B: Restore scroll position after DOM update
+        if (scrollParent && savedScrollTop > 0) {
+            requestAnimationFrame(() => {
+                scrollParent.scrollTop = savedScrollTop;
+            });
+        }
+    }
+
+    // Fix D helper: Apply baseline endpoint data differentially
+    function _applyBaselineData(bStatsEl, data) {
+        if (!bStatsEl || !data || !data.baselines || Object.keys(data.baselines).length === 0) return;
+        const blKeys = Object.keys(data.baselines);
+        const existingItems = bStatsEl.querySelectorAll('.bl-item');
+        if (existingItems.length === blKeys.length) {
+            let idx = 0;
+            for (const bk of blKeys) {
+                const bv = data.baselines[bk];
+                const keyEl = existingItems[idx]?.querySelector('.bl-key');
+                const valEl = existingItems[idx]?.querySelector('.bl-val');
+                if (keyEl) keyEl.textContent = bk;
+                const meanVal = typeof bv.mean === 'number' ? bv.mean.toFixed(2) : bv.mean;
+                const stdVal = typeof bv.std === 'number' ? bv.std.toFixed(2) : bv.std;
+                if (valEl) valEl.textContent = `${meanVal} \u00b1 ${stdVal}`;
+                idx++;
+            }
+        } else {
+            let dynHtml = '';
+            for (const bk of blKeys) {
+                const bv = data.baselines[bk];
+                const meanVal = typeof bv.mean === 'number' ? bv.mean.toFixed(2) : bv.mean;
+                const stdVal = typeof bv.std === 'number' ? bv.std.toFixed(2) : bv.std;
+                dynHtml += `<div class="bl-item"><span class="bl-key">${escapeHtml(bk)}</span><span class="bl-val">${meanVal} \u00b1 ${stdVal}</span></div>`;
+            }
+            bStatsEl.innerHTML = dynHtml;
         }
     }
 

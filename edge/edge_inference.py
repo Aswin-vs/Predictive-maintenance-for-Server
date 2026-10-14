@@ -208,6 +208,7 @@ class EdgeInferenceEngine:
                     result["lstm_ae_recon_error"] = cloud_response.get("lstm_ae_recon_error")
                 else:
                     # Fallback to local if cloud is down
+                    result["offloaded"] = False
                     result["local_decision"] = True
                     result["predictions"]["class"] = pred_class
                     result["predictions"]["confidence"] = confidence

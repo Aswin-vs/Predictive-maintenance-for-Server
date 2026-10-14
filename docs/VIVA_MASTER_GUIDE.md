@@ -444,12 +444,132 @@ We execute `shap.TreeExplainer` on the cloud XGBoost model. It runs in exact pol
 
 ## 15. TOUGH VIVA QUESTIONS & TRICK INQUIRIES
 
-### Q: "Your 1D-CNN accuracy is 99.3%. Isn't that suspiciously high?"
+### Q: "Can we train the predictive maintenance model using ONLY unhealthy (failure) data? How does it compare to our current system?"
 
-**A:** No, and here is why:
-1. The AI4I 2020 dataset has a 3.39% failure rate (highly imbalanced). A trivial "dummy classifier" predicting 100% healthy would achieve 96.61% accuracy.
-2. Our 99.3% accuracy represents near-perfect recall on the minority failure classes, validated using class-specific F1-scores, precision, and recall matrices — not just global accuracy.
-3. Held-out validation splits were strictly isolated prior to any scaler fitting, preventing data leakage.
+**A:** Mathematically and operationally, **training exclusively on unhealthy data is completely flawed**. Here is the formal breakdown across model types:
+
+1. **Supervised Multi-Class Classification (1D-CNN):**
+   - Supervised classification operates under the closed-world assumption using Softmax:
+     $$P(y = c \mid \mathbf{x}) = \frac{e^{z_c}}{\sum_{j=1}^{K} e^{z_j}}$$
+   - If the training set contains *only* fault categories (Thermal, HDD, PSU, Fan, RAM, GPU), the network **has no Class 0 (Healthy) representation**.
+   - When a normal, healthy server operates at 45°C with 15% load, the probabilities must still sum to 1.0 across the failure classes. The model is mathematically forced to assign the normal state to one of the failure classes, producing a **100% False Positive Rate (FPR)**.
+
+2. **Unsupervised Anomaly Detection (The "Anna Karenina Principle"):**
+   - *"All healthy servers are alike; each unhappy server is unhappy in its own way."*
+   - Healthy operating telemetry forms a tight, compact, low-dimensional manifold in feature space ($\Delta T < 35^\circ\text{C}$, tight voltage regulation, stable baseline noise).
+   - Unhealthy states do **not** form a single manifold; failure modes (capacitive aging, solder micro-cracks, mechanical bearing cavitation, RAM bit flips, head crashes) are chaotic, high-dimensional, and open-ended.
+   - An "inverse autoencoder" trained solely on observed failures cannot learn the infinite variety of unseen failure mechanisms, causing catastrophic false negatives whenever a novel breakdown occurs.
+
+3. **Time-To-Failure (TTF) & Survival Regression (Truncation Bias):**
+   - Training regression models strictly on degraded components ($0 \le \text{TTF} \le 30\text{ days}$) collapses the model's dynamic range. The model never learns what healthy hardware looks like 3 years before failure, causing it to predict immediate breakdown even for brand-new components.
+   - Our implementation avoids this via **Weibull Accelerated Failure Time (AFT) Loss** ([server/training/loss.py](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/loss.py)), which integrates **right-censored healthy data** (components that have not yet failed).
+
+**How Our Current System Compares:**
+Our architecture uses a **Hybrid Multi-Model Consensus Architecture**:
+- **1D-CNN Multi-Task Classifier:** Trained on both healthy and minority failure classes using **10x minority oversampling** and **Asymmetric TTF Loss ($\alpha=5.0$)**.
+- **LSTM-Autoencoder:** Trained **strictly on 70,414 healthy frames**. It learns the normal manifold; any abnormal deviation causes high reconstruction error ($\text{MSE} > 0.330935$).
+- **Adaptive Baselines:** Calibrate on the first 24 hours of normal operation to establish $(\mu, \sigma)$ with domain variance floors, detecting anomalies via Z-score distance ($Z \ge 3.0$).
+
+---
+
+### Q: "Why was 93% mentioned alongside 99.30%? Is the 1D-CNN overfitting to the majority class?"
+
+**A:**
+1. **The 93% vs 99.30% Distinction:**
+   - **93% is NOT the model accuracy.** It is the **Operator Dashboard Live Health Dial score (93%–98% OPTIMAL)** recorded in [PROJECT_SUMMARY.md: line 162](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/PROJECT_SUMMARY.md#L162) and [MEMORIES.md: line 306](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/MEMORIES.md#L306) for the monitored Lenovo LOQ server after clearing historical cache warnings.
+   - **99.30% is the true empirical validation accuracy** of the 1D-CNN Multi-Task Classifier evaluated across 2,000 holdout validation samples. On an un-augmented raw split without oversampling, it achieves **97.57% accuracy** with an MAE of 0.0560.
+
+2. **Why It Is Not Simple Overfitting:**
+   - In raw AI4I 2020 data, failures represent only 3.39% (96.61% healthy). A trivial "dummy classifier" predicting 100% healthy scores 96.61% accuracy while possessing zero diagnostic capability.
+   - The confusion matrix proves our model is **not** collapsing to the healthy class. The per-class recall across every individual minority failure mode exceeds **98.4%**:
+     - HDD Degradation: $\frac{168}{169} = \mathbf{99.41\%}$
+     - Thermal Critical: $\frac{182}{185} = \mathbf{98.38\%}$
+     - PSU Anomaly: $\frac{172}{174} = \mathbf{98.85\%}$
+     - Fan Failure: $\frac{175}{177} = \mathbf{98.87\%}$
+     - Memory Fault: $\frac{154}{155} = \mathbf{99.35\%}$
+     - GPU Degradation: $\frac{151}{152} = \mathbf{99.34\%}$
+   - Train/test splitting was executed *prior* to oversampling and *prior* to fitting `StandardScaler`, completely eliminating data leakage. Regularization is enforced via `Dropout(0.3)`, `BatchNormalization`, and `EarlyStopping(patience=5)`.
+   - **Honest Academic Caveat:** Benchmark datasets (AI4I 2020) have cleaner, sharper failure boundaries than noisy real-world datacenter servers. Real server telemetry exhibits sensor jitter, ambient fluctuations, and workload spikes, which is why our architecture pairs the 1D-CNN with an unsupervised **Isolation Forest**, an **LSTM-Autoencoder**, and dynamic **Adaptive Baselines**.
+
+---
+
+### Q: "What are the exact model scores (Accuracy, MAE, MSE, RMSE, R2, AUC, F1) across the entire portfolio, and how well do they match our real hardware?"
+
+**A:** Compiled directly from code and model metadata JSON files in `server/models/`:
+
+| Model & Architecture | Exact Code Metrics | Training Dataset | Performance on Real Hardware (IdeaPad / LOQ) |
+| :--- | :--- | :--- | :--- |
+| **1D-CNN Multi-Task**<br>`Conv1D(32→64)→Dense(128)` | **Val Acc: 99.30%** (2,000 frames)<br>Loss: 0.0560, **TTF MAE: 0.0560** | AI4I 2020 (10,000 frames) + Server Injection | High fidelity on real CPU/GPU thermal runaway ($\Delta T > 1.5^\circ\text{C}/\text{s}$). Real-world accuracy on laptops is ~92–95% due to simulated PMBus/fan channels. |
+| **Fan Bearing 1D-CNN**<br>`Conv1D(32→64→32)→GAP` | **Test Acc: 100.0%**<br>**AUC: 1.000**, Loss: 0.0012 | Synthetic Fan Shock Dataset (6,000 sequences) | 100% accuracy results from non-overlapping synthetic boundaries. Augmented by authentic physical vibration (0.022g RMS via ADXL345) and acoustics (0.11 RMS via INMP441) on RPi4. |
+| **XGBoost Storage**<br>`500 Trees, Depth 6` | **RMSE: 13.15 Days**<br>MAE: 8.72 Days, **$R^2 = 0.814$** | Backblaze Q1 2023 (17.1M daily records) | Highly predictive on mechanical disks (`D:\` cablet 1TB USB HDD on IdeaPad; `A:\` external HDD on LOQ). Primary NVMe SSDs route to wear-leveling endurance % instead. |
+| **TCN Storage RUL**<br>`4 Dilated Causal Layers` | **Val MAE: 15.94 Days**<br>MSE: 588.17 (**RMSE: 24.25 Days**) | Backblaze 30-Day Sliding Windows | Dilated causal receptive field (33 days) captures gradual accumulating sector reallocations, providing sysadmins ~2 weeks of actionable lead time. |
+| **LSTM-Autoencoder**<br>`LSTM(64→32→16→32→64)` | **Val MSE: 0.0949**<br>Threshold: $\tau = 0.330935$ | 70,414 Healthy Server Telemetry Frames | Most robust model on live hardware. Trained on healthy frames; reconstruction error surges to $>0.85$ during real stress tests without false alarms on idle. |
+| **Isolation Forest**<br>`100 Trees, 4 Features` | **100% Sag Detection** ($<11.4\text{V}$)<br>Edge Latency: **0.038 ms** | Unsupervised Voltage & Fan Deviation | Sub-millisecond statistical filter on edge; isolates electrical drops in $<40\ \mu\text{s}$ without requiring neural network matrix multiplication. |
+| **MAD-GAN**<br>`LSTM Gen/Disc (PyTorch)` | Precision: 5.09%, Recall: 5.19%<br>**F1-Score: 5.14%** | Server Machine Dataset (SMD, 38 features) | **F-026 Finding:** Severe domain shift between Server Machine Dataset (SMD) and live schema caused near-random predictions. Mitigated by lowering fusion weight to 0.05. |
+| **ST-GCN**<br>`Spatial Graph + Conv1D` | **Val F1: 4.08%**, Thresh: 0.20<br>Asymmetric $\alpha = 5.0$ | Alibaba DRAM/GPU + Backblaze (36 features) | **F-026 Finding:** Merging disparate Alibaba/Backblaze datasets caused graph adjacency sparsity. Mitigated by lowering fusion weight to 0.05. |
+
+> **Critical Defense Highlight:** In [server/deep_analysis/cloud_fusion.py: lines 37–45](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/deep_analysis/cloud_fusion.py#L37-L45), the code explicitly reveals an engineering mitigation: because MAD-GAN and ST-GCN had low F1 scores when tested across heterogeneous datasets, their ensemble fusion weights were reduced to **0.05 (token weight)**, while the reliable 1D-CNN was assigned **0.75 weight** and the LSTM-AE **0.15 weight**. This demonstrates rigorous engineering integrity over blind theoretical trust.
+
+---
+
+### Q: "How did we normalize features from diverse databases? Did we combine them into one CSV or train individually?"
+
+**A:**
+1. **No Monolithic CSV Concatenation:** Raw datasets are **not** merged into a single static CSV on disk. Disparate temporal resolutions (Backblaze is logged daily; AI4I is logged per CNC cycle; live telemetry is 1 Hz–5 Hz) make static disk concatenation methodologically invalid. Datasets remain isolated under `data/` (`ai4i2020.csv`, `backblaze_ttf.csv`, `synthetic_fan/`).
+2. **Two-Stage Normalization Pipeline:**
+   - **Semantic & Unit Harmonization ([schema_harmonization.py](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/datasets/schema_harmonization.py)):** Physical units are converted (Kelvin to Celsius: $T_C = T_K - 273.15$; RPM to deviation ratio: $\Delta_{\text{RPM}} = \frac{\text{RPM} - 1500}{1500}$; torque to percent load). Unmeasured channels are imputed using physics-grounded defaults (`ENTERPRISE_DEFAULTS`: Ambient $25^\circ\text{C}$, CPU $45^\circ\text{C}$, Vibration $0.02\text{g}$) paired with a binary **Missingness Mask Tensor** $(N, 36)$ ($1.0 = \text{genuine}$, $0.0 = \text{imputed}$).
+   - **Statistical Standardization (`StandardScaler`):** Standardizes features into dimensionless Z-scores ($z = \frac{x - \mu}{\sigma}$). Scaler parameters are calculated strictly on training partitions and saved as `classifier_scaler.pkl` and `lstm_ae_scaler.pkl`.
+
+---
+
+### Q: "How is endpoint communication secured across Patient, RPi4 Doctor, and Cloud Hospital?"
+
+**A:** Security operates across a 3-layer cryptographic fabric:
+1. **Network Encryption (Tailscale WireGuard Mesh):** All traffic between Patient (`100.97.69.16`), RPi4 (`100.90.160.78`), and LOQ (`100.111.172.121`) travels through a private WireGuard point-to-point tunnel using **ChaCha20-Poly1305** authenticated encryption, **Curve25519** ECDH key exchange, and **BLAKE2s** hashing. No ports are exposed to the public Internet.
+2. **Patient $\to$ RPi4 Telemetry:** Transmitted via **MQTT (Port 1883)** strictly within the local Tailscale mesh.
+3. **RPi4 $\to$ Cloud Offloading:** HTTP REST calls to `http://loq.tail1ab139.ts.net:8000/api/offload` require a mandatory `X-API-Key` header validated by [server/utils/auth.py](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/utils/auth.py) against `configs/api_keys.json`. Rate limiting is enforced at **100 req/min per IP** in `inference_server.py`.
+
+---
+
+### Q: "How does the Adaptive Baseline Engine detect anomalies if it only observes healthy data during calibration?"
+
+**A:**
+1. **Running Baseline Estimation:** During the first 24 hours of server operation, [edge/adaptive_baseline.py](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/adaptive_baseline.py) uses **Welford's Algorithm** to compute the continuous running mean $\mu$ and standard deviation $\sigma$ in $\mathcal{O}(1)$ time without caching raw historical data.
+2. **Domain Variance Floors:** To prevent dividing by near-zero variance on an idle machine ($\sigma \approx 0$), it enforces physical variance floors ($\sigma_{\min} = 15\%$ CPU load, $4\text{ GB}$ RAM, $250\text{ MHz}$ frequency, $0.5\text{V}$ voltage).
+3. **Z-Score Sigmoid Mapping:**
+   $$Z = \frac{|x - \mu|}{\max(\sigma, \sigma_{\min})}, \quad P(\text{anomaly}) = \frac{1}{1 + e^{-1.5(Z - 3.0)}}$$
+   When a hardware metric drifts $\ge 3$ standard deviations from the learned baseline, the anomaly probability crosses $0.50$ and triggers an alert.
+
+---
+
+### Q: "How was data leakage discovered and eliminated from the training pipeline?"
+
+**A:** Four historical data leakage vulnerabilities were identified and resolved during pre-release audits:
+1. **BUG-N3 (Scaler Leakage):** Scalers were initially fitted on the full dataset before splitting. Fixed in [train_classifier.py](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/train_classifier.py) by partitioning raw data 80/20 *first*, fitting `StandardScaler` strictly on the training partition, and transforming validation data using training statistics.
+2. **G3.7-1 (Oversampling Leakage):** 10x minority oversampling was initially executed across the entire dataset, leaking duplicate failure samples into both train and test splits. Fixed by moving oversampling strictly inside the training partition *after* the split.
+3. **BUG-02 (Graph Adjacency Contamination):** ST-GCN adjacency matrix $A$ was computed using test partition correlations. Fixed by deriving $A$ strictly from training partition correlations.
+4. **BUG-N7 (Temporal Window Shuffling):** Shuffling rows before slicing 10-step temporal windows destroyed chronological causality. Fixed by splitting raw data chronologically (first 80% train, last 20% val), creating sliding windows independently, and shuffling only the completed 3D windows.
+
+---
+
+### Q: "What is the difference between Float32 and INT8 quantization inputs?"
+
+**A:**
+- **Float32 Model (Cloud LOQ GPU):** Consumes 32-bit floating point numbers (`np.float32`) representing standardized Z-scores ($z \in [-3.0, +3.0]$). Requires high memory bandwidth and floating-point hardware (FPUs/CUDA cores).
+- **INT8 Model (Edge Raspberry Pi 4):** Consumes signed 8-bit integers (`np.int8`) in discrete bins $[-128, +127]$. Input values are mapped using **affine quantization** in [edge/edge_inference.py: line 136](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/edge/edge_inference.py#L136):
+  $$q_{\text{in}} = \text{clip}\left(\left\lfloor \frac{x_{\text{std}}}{S_{\text{in}}} + Z_{\text{in}} \right\rceil, -128, 127\right)$$
+  Where $S_{\text{in}}$ and $Z_{\text{in}}$ are the scale and zero-point parameters. At model output, logits are dequantized back to probabilities: $P(y=c) = (q_{\text{out}} - Z_{\text{out}}) \cdot S_{\text{out}}$. INT8 reduces model footprint by **~91% (1.5 MB $\to$ 135 KB)** and executes in **0.160 ms** using ARM NEON integer vector instructions.
+
+---
+
+### Q: "How does the system generalize from CNC/turbofan benchmark datasets to our patient server hardware?"
+
+**A:** Through three architectural bridges:
+1. **Dimensionless Physics Features:** Physical degradation obeys universal laws. Instead of training on raw machine IDs, [schema_harmonization.py](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/datasets/schema_harmonization.py) extracts dimensionless indicators: thermal gradient to ambient ($\Delta T = T_{\text{die}} - T_{\text{amb}}$), thermal resistance slope ($\frac{dT}{dt}$ per Watt), RPM deviation ratio ($\Delta_{\text{RPM}}$), and voltage sag %.
+2. **Transfer Learning Adapters ([train_adapter.py](file:///c:/Users/LOQ/Documents/Antigravity/Predictive%20maintenance%20for%20Server/server/training/train_adapter.py)):** The convolutional feature extractors of the 1D-CNN are frozen, and a top adapter head (`Dense(64) -> Dropout(0.3) -> Heads`) is fine-tuned on the patient server's live telemetry queried from TimescaleDB.
+3. **Adaptive Baseline Normalization:** Calibrates against each machine's individual thermal equilibrium ($Z = \frac{|x - \mu|}{\sigma}$), ensuring that an IdeaPad idling at 42°C and an LOQ idling at 65°C are both evaluated relative to their own normal operational envelopes.
+
+---
 
 ### Q: "Why use Machine Learning instead of simple if-else thresholds?"
 
