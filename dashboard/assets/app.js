@@ -534,7 +534,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (compKey === 'fans') {
             setNumText('fanRpmNum', metrics.rpm != null ? metrics.rpm : '1450');
             setValText('fanDevVal', metrics.deviation != null ? `${metrics.deviation > 0 ? '+' : ''}${metrics.deviation.toFixed(1)}%` : '+3.3%');
-            setValText('fanStatusVal', metrics.status || 'OPTIMAL');
+            // BUG-FE-01 fix: Update physical sensor readings (v1+v2 key fallback)
+            const telem = (selectedServerId && servers[selectedServerId]?.telemetry) || {};
+            const vib = metrics.vibration_rms ?? telem.vibration_rms ?? telem.environment_vibration_rms ?? 0.020;
+            const aco = metrics.acoustic_rms ?? telem.acoustic_rms ?? telem.environment_acoustic_rms ?? 0.020;
+            setValText('fanVibVal', `${Number(vib).toFixed(3)} g`);
+            setValText('fanAcousticVal', `${Number(aco).toFixed(3)} V`);
         }
     }
 
@@ -695,7 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: 'inmp441',
                 name: 'INMP441 Omnidirectional MEMS Microphone',
                 subsystem: 'Acoustics & Cavitation',
-                interface: 'ALSA I2S (plughw:3,0) / PyAudio',
+                interface: 'ALSA I2S (plughw:1,0 / Auto-Detect)',
                 status: 'live',
                 statusLabel: '● LIVE HARDWARE',
                 value: `Acoustic RMS: ${(env.acoustic_rms || 0.02).toFixed(3)} V • Peak Freq: 1050 Hz`,
@@ -850,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
             { key: 'cpu_load', sub: 'CPU', val: comps.cpu?.metrics?.load ?? telem.cpu_load ?? 31.0, unit: '%', norm: '0 - 100%', status: 'monitored' },
             { key: 'cpu_freq', sub: 'CPU', val: comps.cpu?.metrics?.freq ?? telem.cpu_freq ?? 3100, unit: 'MHz', norm: '1200 - 4500 MHz', status: 'monitored' },
             { key: 'cpu_ambient_delta', sub: 'CPU', val: comps.cpu?.metrics?.delta ?? telem.cpu_ambient_delta ?? 31.1, unit: '°C', norm: '5 - 55°C', status: 'monitored' },
-            { key: 'cpu_power_w', sub: 'CPU', val: 26.2, unit: 'W', norm: '10 - 54 W', status: 'imputed' },
+            { key: 'cpu_power_w', sub: 'CPU', val: telem.cpu_power_w ?? comps.cpu?.metrics?.power ?? 26.2, unit: 'W', norm: '10 - 54 W', status: 'imputed' },
             { key: 'cpu_thermal_resistance', sub: 'CPU', val: 1.19, unit: '°C/W', norm: '0.4 - 1.8 °C/W', status: 'imputed' },
 
             // GPU (7)
@@ -858,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
             { key: 'gpu_util', sub: 'GPU', val: comps.gpu?.metrics?.util ?? telem.gpu_util ?? 7.0, unit: '%', norm: '0 - 100%', status: 'monitored' },
             { key: 'gpu_power', sub: 'GPU', val: comps.gpu?.metrics?.power ?? telem.gpu_power ?? 12.7, unit: 'W', norm: '5 - 115 W', status: 'monitored' },
             { key: 'gpu_mem_used', sub: 'GPU', val: comps.gpu?.metrics?.vram_mb ?? telem.gpu_mem_used ?? 1413, unit: 'MB', norm: '0 - 8192 MB', status: 'monitored' },
-            { key: 'gpu_mem_total', sub: 'GPU', val: 8188, unit: 'MB', norm: '8188 MB', status: 'monitored' },
+            { key: 'gpu_mem_total', sub: 'GPU', val: comps.gpu?.metrics?.vram_total ?? telem.gpu_mem_total ?? 8188, unit: 'MB', norm: '> 0 MB', status: 'monitored' },
             { key: 'gpu_clock', sub: 'GPU', val: comps.gpu?.metrics?.clock ?? telem.gpu_clock ?? 1890, unit: 'MHz', norm: '210 - 2370 MHz', status: 'monitored' },
             { key: 'gpu_fan_rpm', sub: 'GPU', val: 0, unit: 'RPM', norm: 'EC Managed', status: 'imputed' },
 
@@ -876,14 +881,14 @@ document.addEventListener('DOMContentLoaded', () => {
             { key: 'smart_194_raw', sub: 'Storage', val: comps.hdd?.metrics?.temp ?? telem.smart_194_raw ?? 35, unit: '°C', norm: '20 - 55°C', status: 'monitored' },
             { key: 'smart_197_raw', sub: 'Storage', val: comps.hdd?.metrics?.smart_197 ?? telem.smart_197_raw ?? 0, unit: 'sectors', norm: '0', status: 'monitored' },
             { key: 'smart_198_raw', sub: 'Storage', val: comps.hdd?.metrics?.smart_198 ?? telem.smart_198_raw ?? 0, unit: 'sectors', norm: '0', status: 'monitored' },
-            { key: 'storage_used_pct', sub: 'Storage', val: 70.9, unit: '%', norm: '0 - 95%', status: 'monitored' },
-            { key: 'storage_capacity_gb', sub: 'Storage', val: 931.5, unit: 'GB', norm: '> 0', status: 'monitored' },
+            { key: 'storage_used_pct', sub: 'Storage', val: comps.hdd?.metrics?.used_pct ?? telem.storage_used_pct ?? 70.9, unit: '%', norm: '0 - 95%', status: 'monitored' },
+            { key: 'storage_capacity_gb', sub: 'Storage', val: comps.hdd?.metrics?.capacity_gb ?? telem.storage_capacity_gb ?? 931.5, unit: 'GB', norm: '> 0', status: 'monitored' },
 
             // PSU (4)
             { key: 'psu_voltage_3v3_dev', sub: 'Power', val: comps.psu?.metrics?.dev_3v3 ?? telem.psu_voltage_3v3_dev ?? 0.30, unit: '%', norm: '< 5.0%', status: 'imputed' },
             { key: 'psu_voltage_12v_dev', sub: 'Power', val: comps.psu?.metrics?.dev_12v ?? telem.psu_voltage_12v_dev ?? 0.42, unit: '%', norm: '< 5.0%', status: 'imputed' },
             { key: 'psu_voltage_stability', sub: 'Power', val: comps.psu?.metrics?.stability ?? telem.psu_voltage_stability ?? 0.05, unit: 'σ', norm: '< 0.15', status: 'imputed' },
-            { key: 'psu_total_power_w', sub: 'Power', val: 120.0, unit: 'W', norm: '30 - 230 W', status: 'imputed' },
+            { key: 'psu_total_power_w', sub: 'Power', val: telem.psu_total_power_w ?? comps.psu?.metrics?.total_power ?? 120.0, unit: 'W', norm: '30 - 230 W', status: 'imputed' },
 
             // Fan & Environment (5)
             { key: 'fan_rpm', sub: 'Fans', val: comps.fans?.metrics?.rpm ?? telem.fan_rpm ?? 1450, unit: 'RPM', norm: '800 - 3200 RPM', status: 'monitored' },
@@ -1187,12 +1192,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         drawSparkline('sparklineCpu', labels, history.map(h => h.cpu_temp || 56), '#38bdf8');
         drawSparkline('sparklineGpu', labels, history.map(h => h.gpu_temp || 50), '#818cf8');
-        drawSparkline('sparklineHdd', labels, history.map(h => 100 - (h.cpu_load || 15) * 0.2), '#34d399');
+        drawSparkline('sparklineHdd', labels, history.map(h => h.hdd_health ?? h.hdd_temp ?? 100), '#34d399');
         drawSparkline('sparklinePsu', labels, history.map(h => h.psu_12v_dev || 0.42), '#c084fc');
         drawSparkline('sparklineRam', labels, history.map(h => h.ram_percent || 58), '#fbbf24');
         drawSparkline('sparklineFans', labels, history.map(h => h.fan_rpm || 1450), '#38bdf8');
 
-        drawSparkline('kpiConfidenceSparkline', labels, history.map(() => 98 + Math.random() * 1.5), '#38bdf8');
+        drawSparkline('kpiConfidenceSparkline', labels, history.map(h => (h.confidence ?? 0.985) * 100), '#38bdf8');
         drawSparkline('kpiTtfSparkline', labels, history.map(h => h.health_index || 100), '#34d399');
         drawSparkline('kpiHealthSparkline', labels, history.map(h => h.health_index || 100), '#818cf8');
     }
@@ -1465,23 +1470,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if (flowFaultLabel) flowFaultLabel.textContent = faultLabel;
         if (flowTtfVal) flowTtfVal.textContent = `TTF ${ttfStr}`;
 
-        // Dynamic SHAP Features Calculation from active telemetry
-        const cpuT = telem.cpu_temp_package ?? comps.cpu?.metrics?.temp ?? 56.1;
-        const ambT = telem.environment_ambient_temp ?? 25.0;
-        const deltaT = cpuT - ambT;
-        const vib = telem.environment_vibration_rms ?? 0.021;
-        const psuDev = Math.abs((telem.psu_voltage_12v ?? 12.05) - 12.0);
-        const fanDev = Math.abs((telem.fans_cpu_fan_rpm ?? 1450) - 1400) / 1400 * 100;
-        const ramPct = comps.ram?.metrics?.percent ?? 58.6;
+        // BUG-FE-02: Prefer real cloud SHAP values, fallback to 10-feature heuristic
+        const rawShap = inf.shap_values || inf.shap_explanation || null;
+        let dynamicFeatures;
 
-        const dynamicFeatures = [
-            { feat: 'cpu_temp', val: cpuT.toFixed(1), base: '45.0', shap: Math.min(0.45, Math.max(-0.25, (cpuT - 45.0) * 0.015)) },
-            { feat: 'cpu_ambient_delta', val: deltaT.toFixed(1), base: '20.0', shap: Math.min(0.35, Math.max(-0.20, (deltaT - 20.0) * 0.012)) },
-            { feat: 'vibration_rms', val: vib.toFixed(3), base: '0.020', shap: Math.min(0.40, Math.max(-0.25, (vib - 0.020) * 8.0)) },
-            { feat: 'psu_12v_dev', val: psuDev.toFixed(2), base: '0.10', shap: Math.min(0.30, Math.max(-0.20, (psuDev - 0.10) * 2.0)) },
-            { feat: 'fan_rpm_dev', val: fanDev.toFixed(1) + '%', base: '5.0%', shap: Math.min(0.25, Math.max(-0.15, (fanDev - 5.0) * 0.01)) },
-            { feat: 'ram_utilization', val: ramPct.toFixed(1) + '%', base: '50.0%', shap: Math.min(0.30, Math.max(-0.20, (ramPct - 50.0) * 0.005)) }
-        ];
+        if (rawShap && typeof rawShap === 'object' && Object.keys(rawShap).length > 0) {
+            const entries = Array.isArray(rawShap)
+                ? rawShap.map((v, i) => [`feature_${i}`, v])
+                : Object.entries(rawShap);
+            dynamicFeatures = entries
+                .map(([feat, shapVal]) => ({
+                    feat, val: String(telem[feat] ?? '—'), base: '—',
+                    shap: parseFloat(shapVal) || 0
+                }))
+                .sort((a, b) => Math.abs(b.shap) - Math.abs(a.shap))
+                .slice(0, 10);
+        } else {
+            const cpuT = telem.cpu_temp_package ?? comps.cpu?.metrics?.temp ?? 56.1;
+            const ambT = telem.environment_ambient_temp ?? telem.ambient_temp ?? 25.0;
+            const deltaT = cpuT - ambT;
+            const vib = telem.environment_vibration_rms ?? telem.vibration_rms ?? 0.021;
+            const psuDev = Math.abs((telem.psu_voltage_12v ?? 12.05) - 12.0);
+            const fanDev = Math.abs((telem.fans_cpu_fan_rpm ?? 1450) - 1400) / 1400 * 100;
+            const ramPct = comps.ram?.metrics?.percent ?? 58.6;
+            const smart5 = telem.hdd_smart_5_raw ?? comps.hdd?.metrics?.smart_5 ?? 0;
+            const smart197 = telem.hdd_smart_197_raw ?? comps.hdd?.metrics?.smart_197 ?? 0;
+            const smart194 = telem.hdd_smart_194_raw ?? comps.hdd?.metrics?.temp ?? 35;
+            const acoustic = telem.environment_acoustic_rms ?? telem.acoustic_rms ?? 0.02;
+
+            dynamicFeatures = [
+                { feat: 'cpu_temp', val: cpuT.toFixed(1), base: '45.0', shap: Math.min(0.45, Math.max(-0.25, (cpuT - 45.0) * 0.015)) },
+                { feat: 'cpu_ambient_delta', val: deltaT.toFixed(1), base: '20.0', shap: Math.min(0.35, Math.max(-0.20, (deltaT - 20.0) * 0.012)) },
+                { feat: 'vibration_rms', val: vib.toFixed(3), base: '0.020', shap: Math.min(0.40, Math.max(-0.25, (vib - 0.020) * 8.0)) },
+                { feat: 'psu_12v_dev', val: psuDev.toFixed(2), base: '0.10', shap: Math.min(0.30, Math.max(-0.20, (psuDev - 0.10) * 2.0)) },
+                { feat: 'fan_rpm_dev', val: fanDev.toFixed(1) + '%', base: '5.0%', shap: Math.min(0.25, Math.max(-0.15, (fanDev - 5.0) * 0.01)) },
+                { feat: 'ram_utilization', val: ramPct.toFixed(1) + '%', base: '50.0%', shap: Math.min(0.30, Math.max(-0.20, (ramPct - 50.0) * 0.005)) },
+                { feat: 'smart_5_raw', val: String(smart5), base: '0', shap: Math.min(0.50, smart5 * 0.05) },
+                { feat: 'smart_197_raw', val: String(smart197), base: '0', shap: Math.min(0.45, smart197 * 0.04) },
+                { feat: 'smart_194_raw', val: smart194.toFixed(1), base: '35.0', shap: Math.min(0.30, Math.max(-0.15, (smart194 - 35.0) * 0.01)) },
+                { feat: 'acoustic_rms', val: acoustic.toFixed(3), base: '0.020', shap: Math.min(0.35, Math.max(-0.20, (acoustic - 0.020) * 6.0)) }
+            ];
+        }
 
         const labels = dynamicFeatures.map(f => f.feat);
         const data = dynamicFeatures.map(f => parseFloat(f.shap.toFixed(3)));
@@ -1944,8 +1973,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const resp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': 'pm-edge-ac0008caeb077588ba481e57e1bde8af'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ message: text })
             });

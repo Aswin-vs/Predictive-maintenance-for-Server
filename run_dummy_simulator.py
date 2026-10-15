@@ -61,10 +61,22 @@ def generate_telemetry(anomaly_type=None):
             "environment_acoustic_rms": random.uniform(20.0, 40.0)
         }
         
-    # Pad out the remaining 20 features with realistic ambient/sensor noise
-    for i in range(1, 21):
-        data[f"sensor_aux_{i}"] = random.uniform(0.1, 5.0)
-        
+    # Fill remaining canonical features with realistic defaults
+    try:
+        from server.training.feature_schema import FEATURE_NAMES_V1, FEATURE_DEFAULTS
+        telem_key_map = {
+            'cpu_temp': 'cpu_temp_package', 'cpu_load': 'cpu_load_percent',
+            'gpu_util': 'gpu_utilization_percent', 'smart_5_raw': 'hdd_smart_5_raw',
+            'smart_194_raw': 'hdd_smart_194_raw', 'vibration_rms': 'environment_vibration_rms',
+            'acoustic_rms': 'environment_acoustic_rms',
+        }
+        for feat in FEATURE_NAMES_V1:
+            telem_key = telem_key_map.get(feat, feat)
+            if telem_key not in data and feat not in data:
+                data[telem_key] = FEATURE_DEFAULTS.get(feat, 0.0) + random.uniform(-0.1, 0.1)
+    except ImportError:
+        pass
+
     return data
 
 def main():
@@ -76,6 +88,8 @@ def main():
                         help="Server ID to use in payloads")
     parser.add_argument("--server-name", type=str, default="Anomaly Simulator",
                         help="Human-readable server name")
+    parser.add_argument("--no-mock", action="store_true",
+                        help="Omit mock_class to test real AI inference pipeline")
     args = parser.parse_args()
 
     broker = args.broker
@@ -115,6 +129,8 @@ def main():
             # Include server_id and server_name for multi-server dashboard support
             payload["server_id"] = server_id
             payload["server_name"] = server_name
+            if args.no_mock and "mock_class" in payload:
+                del payload["mock_class"]
             client.publish(TOPIC, json.dumps(payload))
             
             print(f"[{time.strftime('%H:%M:%S')}] Published {len(payload)} features | CPU: {payload.get('cpu_temp_package', 0.0):.1f}C")

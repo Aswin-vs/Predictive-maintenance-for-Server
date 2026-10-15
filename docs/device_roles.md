@@ -23,7 +23,7 @@
   │ Sensors nearby:   │         │                   │          │                   │
   │ ├ DHT22 (temp)    │         │ WiFi Hotspot for  │          │                   │
   │ ├ ADXL345 (vib.)  │         │ demo access       │          │                   │
-  │ └ MAX4466 (sound) │         │                   │          │                   │
+  │ └ INMP441 (sound) │         │                   │          │                   │
   └───────────────────┘         └───────────────────┘          └───────────────────┘
        Hardware TBD                  4GB RAM                    Ryzen 7, 24GB RAM
                                      ARM Cortex-A72             RTX 4060 8GB VRAM
@@ -46,7 +46,7 @@
 
 **Data flows OUT from this device → to RPi4 via MQTT**
 
-External sensors (DHT22, ADXL345, MAX4466) are placed **on or near this device** to capture ambient temperature, vibration, and acoustic signatures. These sensors are wired to the RPi4's GPIO (the RPi4 sits physically near the server).
+External sensors (DHT22, ADXL345, INMP441) are placed **on or near this device** to capture ambient temperature, vibration, and acoustic signatures. These sensors are wired to the RPi4's GPIO / I2S (the RPi4 sits physically near the server).
 
 ### 🩺 Raspberry Pi 4 (Doctor / Edge)
 
@@ -58,7 +58,7 @@ External sensors (DHT22, ADXL345, MAX4466) are placed **on or near this device**
 | Edge Inference Engine | TFLite INT8 classifier + TTF estimator |
 | Isolation Forest | PSU/Fan anomaly detection |
 | Confidence Router | If confident → local decision. If unsure → offload to LOQ |
-| Sensor Collector | Reads DHT22, ADXL345, MAX4466 from GPIO (when available) |
+| Sensor Collector | Reads DHT22 (GPIO), ADXL345 (I2C), INMP441 (I2S ALSA) |
 | Operator Dashboard | Custom HTML/CSS/JS — professional, clean, essential info only |
 | Chat Widget (Rule-Based) | Simple template-based chat for basic questions when LOQ is unavailable |
 | WiFi Hotspot | For demo — guide connects phone/laptop to view dashboard |

@@ -56,7 +56,7 @@
 - **Communication:** MQTT (Mosquitto broker on RPi4) — all devices connect to RPi4
 - **Time Series Storage:** InfluxDB on LOQ (for Grafana) + SQLite on RPi4 (lightweight local store)
 - **Dashboard (confirmed):** Custom HTML/CSS/JS on RPi4 (operator) + Grafana on LOQ (engineer)
-- **AI Chatbot:** Ollama + Llama 3.1 8B (Q4 quantized, ~5GB VRAM) on LOQ — RAG over prediction data + SHAP explanations. Rule-based fallback on RPi4 when LOQ unavailable.
+- **AI Chatbot:** Ollama + Qwen 3.5 4B (3.1 GB VRAM, 100% GPU) on LOQ — RAG over prediction data + SHAP explanations. Rule-based fallback on RPi4 when LOQ unavailable.
 - **Model Optimization:** TFLite quantization (FP32 → INT8), weight pruning, ONNX as alternative export
 
 ### Hardware
@@ -67,7 +67,7 @@
 - **External Sensors (not yet purchased — software-only first):**
   - DHT22 — ambient temperature + humidity
   - ADXL345 — 3-axis accelerometer (vibration detection)
-  - MAX4466 — electret microphone (acoustic monitoring)
+  - INMP441 — I2S MEMS microphone [PRIMARY] (acoustic monitoring)
   - MCP3008 — SPI ADC for analog sensors (RPi4 has no analog input)
 
 ### Datasets
@@ -97,12 +97,12 @@ SERVER DEVICE (Patient)        RPi4 (Doctor/Edge)           RTX 4060 LAPTOP (Hos
 │ └ nvidia-smi (if    │       │     │          │     │      │ ├ Grafana Dashboard      │
 │   GPU present)      │       │  conf>0.85   conf<0.85     │ │ (detailed eng. view)   │
 │                     │       │     ▼          ▼     │      │ └ AI CHATBOT (Ollama)    │
-│ External Sensors    │       │  LOCAL     OFFLOAD───┼─────▶│   Llama 3.1 8B + RAG    │
+│ External Sensors    │       │  LOCAL     OFFLOAD───┼─────▶│   Qwen 3.5 4B + RAG     │
 │ (placed on/near     │       │  DECISION   to cloud │      │   over predictions/SHAP  │
 │  this device)       │       │                      │◀─────│                          │
 │ ├ DHT22 (temp)      │       │ Operator Dashboard   │      └──────────────────────────┘
 │ ├ ADXL345 (vib.)    │       │ ├ Health + TTF cards │
-│ └ MAX4466 (acoustic)│       │ ├ Alert log          │
+│ └ INMP441 (acoustic)│       │ ├ Alert log          │
 │                     │       │ └ Simple chat        │
 │                     │       │   (rule-based        │
 └─────────────────────┘       │    fallback)         │
@@ -115,7 +115,7 @@ SERVER DEVICE (Patient)        RPi4 (Doctor/Edge)           RTX 4060 LAPTOP (Hos
 2. **LSTM-Autoencoder** → Anomaly detection (trained on healthy data only, unsupervised)
 3. **XGBoost** → HDD specialist (Backblaze SMART → TTF days)
 4. **Isolation Forest** → PSU/Fan anomaly detection (unsupervised, lightweight for edge)
-5. **Llama 3.1 8B (via Ollama)** → AI chatbot with RAG — answers maintenance questions using prediction data + SHAP explanations. Rule-based fallback on RPi4 when LOQ is unavailable.
+5. **Qwen 3.5 4B (via Ollama)** → AI chatbot with RAG — answers maintenance questions using prediction data + SHAP explanations. Rule-based fallback on RPi4 when LOQ is unavailable.
 
 ### 7 Fault Classes
 
@@ -137,8 +137,67 @@ Key features include: thermal ramp rates (°C/sec), Δ-features (rate of change)
 
 ## 📊 Active Sprint Tasks
 
-> **Current Phase:** 🏆 **PRODUCTION GITHUB REPOSITORY SYNCHRONIZATION & REMOTE PUSH COMPLETED (2026-10-14)**
-> **Status:** COMPLETED — Staged and pushed all production deliverables (Sensor Wiring Guide, 2nd Presentation Defense Manual, Master Dossier PDF, LaTeX Thesis Assets, Architecture Reference, and UI/Telemetry resilience patches) to GitHub origin/main (https://github.com/Aswin-vs/Predictive-maintenance-for-Server).
+> **Current Phase:** 📋 **COMPREHENSIVE CODE AUDIT & IMPLEMENTATION FIXES (P0–P4) (2026-10-15)**
+> **Status:** 🏆 **COMPLETED — ALL P0–P4 FIXES EXECUTED & VERIFIED (36/36 TESTS PASSED, ZERO REGRESSIONS, FULL SYNCHRONIZATION)**
+
+### 📋 Phase 18: Complete Architecture Audit & Fix Implementation — COMPLETED (2026-10-15)
+
+- [x] **Codebase-Wide Bug Verification:**
+  - Verified all 23 reported bugs against the ACTUAL current codebase (not PDF/text dump).
+  - Confirmed 19 bugs (BUG-FE-05 restored — plughw:3,0 IS at app.js line 698).
+  - Found 1 already fixed (torch in requirements), 1 partially confirmed (DOC-05), 2 deferred (BUG-ML-03/04).
+- [x] **Security Audit — Hardcoded Credentials Cataloged:**
+  - Found `edge12345` SSH password in 7 script files.
+  - Found production API key `pm-edge-ac0008...` in 6 files (including browser JS).
+  - Found TSDB password `pm_edge_2026` in 7 files (mostly with `os.getenv` fallback).
+- [x] **Implementation Plan v1 Created, then v2 Corrected after Argon Review:**
+  - Flaw 1 (VALID): BUG-SIM-01 — extend existing argparse, don't create duplicate.
+  - Flaw 2 (VALID): BUG-ML-02 — use continuous Z-score projection `x = μ + clip(z, -5, 5)·σ`, not step function.
+  - Flaw 3 (INVALID): edge_inference.py lines 161-166 ALREADY has dtype guard for float32.
+  - Flaw 4 (VALID): BUG-FE-01 — add v1+v2 key fallback chain for vibration/acoustic.
+  - Flaw 5 (INVALID): `detailArchPill` NOT in current app.js (grep: 0 results).
+  - Flaw 6 (VALID): BUG-FE-05 — plughw:3,0 IS at line 698, change to plughw:1,0.
+  - Flaw 7 (PARTIAL): AUDIT_REPORT.md updated to Qwen 3.5 4B & plughw:1,0.
+- [x] **Execute P0: Security Fixes** (BUG-FE-06, BUG-SEC-01):
+  - Removed plaintext API key from browser JS (`app.js`).
+  - Added robust API key fallback in `edge/api_server.py` querying `configs/api_keys.json` and `configs/edge.env` when forwarding chat requests to `:8001/api/chat`.
+  - Replaced hardcoded script passwords with environment lookups (`RPI4_PASS`).
+- [x] **Execute P1: Frontend Bug Fixes** (BUG-FE-01, 02, 03, 04, 05, 07):
+  - BUG-FE-01: Added dual-key fallback chain for vibration and acoustics in `renderHardwareCard('fans')`.
+  - BUG-FE-02: Enhanced SHAP waterfall chart to prioritize real cloud explanations with 10-feature fallback.
+  - BUG-FE-03: Replaced `Math.random()` confidence sparklines with historical data; decoupled HDD sparkline from CPU temp.
+  - BUG-FE-04: Replaced hardcoded GPU VRAM and storage constants in schema 36 grid with dynamic telemetry queries.
+  - BUG-FE-05: Corrected ALSA interface label to `plughw:1,0 / Auto-Detect`.
+  - BUG-FE-07: Consolidated triplicate `.calibration-banner` CSS definitions into single canonical block in `style.css`.
+- [x] **Execute P2: ML Pipeline Fixes** (BUG-ML-01, 02, 05, BUG-SIM-01):
+  - BUG-ML-01: Clipped quantization calibration data to $[-6.0, 6.0]$ and ensured `converter.inference_output_type = tf.float32`.
+  - BUG-ML-02: Added `update_metric()` and signed `get_z_score()` to `AdaptiveBaseline` using Welford's algorithm; replaced dead static domain constants in `edge/main.py` with continuous Z-score projection and cold-start anomaly safeguards.
+  - BUG-ML-05: Integrated `ModelRouter` and `EnsembleDecisionEngine` non-destructively into `edge/main.py`.
+  - BUG-SIM-01: Replaced `sensor_aux_*` padding with canonical schema defaults and added `--no-mock` CLI flag to existing `ArgumentParser` in `run_dummy_simulator.py`.
+- [x] **Execute P3: Backend & Script Fixes** (BUG-BAT-01):
+  - Added fallback environment defaults for missing/incomplete `configs/network.env` in `START_ALL.bat`, `STOP_ALL.bat`, and `start_loq_cloud.bat`.
+- [x] **Execute P4: Documentation Fixes** (DOC-02, 03, 04, 06):
+  - DOC-02: Fixed docker exec container name (`pm-timescaledb`) and table name (`telemetry_raw`) in `master_execution_guide.md`.
+  - DOC-03: Harmonized all LLM references from `Llama 3.1 8B` to `Qwen 3.5 4B` across `AUDIT_REPORT.md`, `PROJECT_SUMMARY.md`, and `MEMORIES.md`.
+  - DOC-04: Replaced `MAX4466` references with `INMP441` as primary acoustic sensor across `docs/project_viva_walkthrough.md` and `docs/device_roles.md`.
+  - DOC-06: Updated TCN Storage RUL MAE metric to 15.94 days across documentation.
+- [x] **Run pytest regression suite (36/36 passed, 0 failures, 100% success rate)**
+
+### 🏆 Phase 16: Live Physical Sensor Smoke Test & Isolated Diagnostic Suite — COMPLETED (2026-10-14)
+
+- [x] **ADXL345 3-Axis Accelerometer Live Hardware Verification:**
+  - Verified I2C Bus 1 address `0x53` with authentic Device ID `0xE5`.
+  - Streamed live 3-axis vibration samples: Magnitude ~1.005g, Dynamic RMS 0.005g–0.012g.
+- [x] **INMP441 Digital I2S Microphone ALSA Activation & Live Audio Test:**
+  - Configured `/boot/firmware/config.txt` overlay (`dtoverlay=googlevoicehat-soundcard`, `dtparam=i2s=on`).
+  - Rebooted RPi4 (18s re-handshake) and verified ALSA detection as Card 1 (`plughw:1,0`).
+  - Captured live 70,560-byte 44.1 kHz 32-bit S32_LE burst; measured real normalized acoustic RMS: 0.162431.
+- [x] **Isolated Test Suite Deployment (`/home/pi/sensor_tests/`):**
+  - Created dedicated testing directory on RPi4: `/home/pi/sensor_tests/` (strictly separated from `/home/pi/predictive-maintenance/`).
+  - Deployed `test_sensors.py` (zero-dependency master smoke test suite), `test_adxl345.py`, and `test_inmp441.py`.
+- [x] **Edge AI Production Service Resilience:**
+  - Enhanced `edge/sensor_reader.py` with multi-candidate ALSA device auto-detection (`plughw:1,0`, `plughw:3,0`).
+  - Synced to RPi4 and verified `edge-ai.service` running active with background sensor publisher thread.
 
 ### 🏆 Phase 15: GitHub Remote Synchronization & Production Push — COMPLETED (2026-10-14)
 
@@ -191,6 +250,8 @@ Key features include: thermal ramp rates (°C/sec), Δ-features (rate of change)
   - Mirrored to Windows Downloads (`C:\Users\LOQ\Downloads\Edge_AI_Complete_Master_Project_Dossier.pdf`) and IDE Artifacts (`C:\Users\LOQ\.gemini\antigravity-ide\brain\a5dcf0ab-05ac-433e-a194-5a8c6e689f7e\Edge_AI_Complete_Master_Project_Dossier.pdf`).
 
 
+### 🏆 Phase 17: Dashboard Adaptive Baseline Flicker Remediation & Offline Edge Fallback Verification — COMPLETED (2026-10-14)
+
 - [x] **Root Cause Analysis:** Identified 4 root causes in `dashboard/assets/app.js`:
   - RC-1: Full `innerHTML` nuke on `#hwComponentGrid` every 2s poll tick (line 1062) destroys and recreates entire DOM subtree
   - RC-2: `renderActiveServer()` unconditionally calls `renderHardwareDetail()` on every state update when Tab 3 is active (line 474), regardless of whether data changed
@@ -205,7 +266,8 @@ Key features include: thermal ramp rates (°C/sec), Δ-features (rate of change)
   - Fix D: Added `_lastBaselineCache` with 30s TTL and `_applyBaselineData()` helper for deduplicated async baseline fetch.
 - [x] **Code Implementation — Confidence Label Fix (`edge/edge_inference.py`):**
   - Added `result["offloaded"] = False` in the cloud-down fallback branch (line 211) so dashboard correctly shows `EDGE` instead of `CLOUD` when LOQ is offline.
-- [ ] **Testing & Deployment:** Pytest suite running. Deploy to RPi4 via `deploy_all.py` when RPi4 is available.
+- [x] **Testing & Deployment:** Pytest suite passed (36/36). Deployed to RPi4 via `deploy_all.py`. Verified `edge-ai.service` running active, `IdeaPad-Patient` streaming telemetry, `offloaded = False` (`RPi4 Doctor INT8` confirmed on live dashboard), and Tab 3 Hardware Detail / Adaptive Baseline tables rendering stably without flickering.
+- [x] **Live Neural Model Verification (Idle vs Anomaly):** Verified with live probe on RPi4 that the 1D-CNN INT8 model actively processes every frame. On nominal idle telemetry, it outputs Class 0 (HEALTHY) at uniform Softmax 14.5%; upon simulated hardware anomalies (thermal critical, fan failure), it immediately jumps to **99.6% confidence** with `anomaly_detected = True` and TTF = 0.0d.
 
 ### 🏆 Phase 11: Academic Thesis Report & Overleaf Integration — COMPLETED (2026-10-12)
 
@@ -1986,7 +2048,7 @@ Predictive maintenance for Server/
   - Audited feature normalization pipeline across `schema_harmonization.py` (canonical 36 features, physical defaults, binary missingness mask) and scikit-learn `StandardScaler` artifacts.
   - Confirmed raw dataset organization across `data/` (`ai4i2020.csv`, `backblaze_ttf.csv`, `synthetic_fan/`) and verified datasets remain isolated per specialist model rather than concatenated into a monolithic CSV.
   - Reconciled model performance and 93% metric distinction: 93% is the Operator Dashboard health dial baseline; 1D-CNN validation accuracy is 99.30% (97.57% honest un-oversampled test split).
-  - Audited full model portfolio: Fan Bearing 1D-CNN (~100% test accuracy on synthetic PWM/RPM), XGBoost HDD (13.15 days RMSE), TCN Storage RUL (9.4 days MAE), LSTM-AE ($\tau = 0.330935$, MSE = 0.0949), and Cloud Fusion weight mitigation for MAD-GAN/ST-GCN (weights reduced to 0.05).
+  - Audited full model portfolio: Fan Bearing 1D-CNN (~100% test accuracy on synthetic PWM/RPM), XGBoost HDD (13.15 days RMSE), TCN Storage RUL (15.94 days MAE), LSTM-AE ($\tau = 0.330935$, MSE = 0.0949), and Cloud Fusion weight mitigation for MAD-GAN/ST-GCN (weights reduced to 0.05).
   - Verified network security across Tailscale WireGuard mesh (ChaCha20-Poly1305, Curve25519) with API Key authentication (`server/utils/auth.py`), rate limiting (100 req/min), and input schema validation.
   - Verified 4 data leakage fixes: BUG-N3 (split before scale), G3.7-1 (post-split oversampling), BUG-02 (train-only graph adjacency), and BUG-N7 (chronological window slicing).
   - Confirmed INT8 affine quantization math in `edge_inference.py` ($q = \text{clip}(\lfloor x/S + Z \rceil, -128, 127)$) vs Float32 z-scores.
@@ -2024,6 +2086,34 @@ Predictive maintenance for Server/
   - Synchronized `docs/architecture/ARCHITECTURE.md` Section 5.1 summary table and Sections 14.4–14.5 with exact code-verified benchmark metrics, real-world hardware fidelity comparisons, and unhealthy-only training proofs.
   - Synchronized `docs/VIVA_MASTER_GUIDE.md` Section 15 with 9 comprehensive Q&As covering unhealthy-only training failure proofs, 93% vs 99.30% accuracy, portfolio score ledger, normalization pipelines, Tailscale endpoint security, adaptive baseline anomaly detection, data leakage fixes, and INT8 quantization mathematics.
   - Synchronized `docs/project_viva_walkthrough.md` Section 9 with Q19–Q22 covering these core defense topics.
+
+### Session 37 (2026-10-14T22:45) — Physical Sensor Test Script Remediation & ALSA Device Bus Exclusivity Resolution
+
+- **Root Cause Analysis (Why `live_meter.py` and `test_inmp441.py` Exited Immediately):**
+  1. *ALSA Soundcard Enumeration Shift (`plughw:3,0` vs `plughw:1,0`):*
+     - Prior to reboot, the I2S microphone was registered at Card 3 (`plughw:3,0`).
+     - Upon clean system boot with `/boot/firmware/config.txt` overlay (`googlevoicehat-soundcard`), ALSA enumerated the soundcard as **Card 1 (`plughw:1,0`)**.
+     - Card 3 on the RPi4 was assigned to HDMI audio (`vc4hdmi1`), which has no audio capture capabilities.
+     - When `arecord` attempted to open `plughw:3,0`, ALSA immediately exited with: `audio open error: No such file or directory`.
+  2. *Silent Failure in `live_meter.py`:*
+     - `subprocess.Popen` in `live_meter.py` was launched with `stderr=subprocess.DEVNULL`, suppressing ALSA's error output.
+     - `proc.stdout.read(CHUNK_BYTES)` received EOF ($0$ bytes) instantly, triggering `if not raw_data: break` and cleanly exiting without printing anything after the banner.
+  3. *ALSA Hardware PCM Exclusivity (`Device or resource busy` / `EBUSY`):*
+     - Raw hardware ALSA devices (`hw:1,0` and `plughw:1,0`) enforce single-process exclusive lock during recording.
+     - The background production daemon `edge-ai.service` runs a background sensor publisher sampling `plughw:1,0` every 2.0s for 0.2s.
+     - A continuous, non-stop streaming visualizer like `live_meter.py` collides with `edge-ai.service` unless `edge-ai` is temporarily stopped during bench testing (`sudo systemctl stop edge-ai`).
+- **Remediation & Code Updates Deployed:**
+  - **Dynamic Card Discovery:** Updated `/home/pi/sensor_tests/test_inmp441.py`, `/home/pi/mic_test/live_meter.py`, and `/home/pi/mic_test/check_health.py` with automatic `arecord -l` card parsing, eliminating hardcoded card indices.
+  - **Stereo Driver Compliance:** Standardized `-c 2` on `googlevoicehat` ALSA captures with Left-channel ($[0::2]$) indexing.
+  - **Helpful EBUSY Diagnostics:** Added explicit exception handling in `live_meter.py` alerting the user if `edge-ai.service` holds the microphone, providing instructions to pause/resume the service.
+  - **Patched Verification Suite:** Updated `/home/pi/mic_test/verify_both_sensors.py` (`plughw:3,0` $\to$ `plughw:1,0`).
+- **Live Hardware Verification:**
+  - `python3 /home/pi/sensor_tests/test_sensors.py`: **ADXL345 [PASS] | INMP441 [PASS] 100%**.
+  - `python3 /home/pi/sensor_tests/test_inmp441.py`: **Normalized RMS 0.0674, Peak 0.1917, 100% PASS**.
+  - `python3 /home/pi/mic_test/verify_both_sensors.py`: **ADXL345 [PASS] | INMP441 [PASS] | CONCURRENT [PASS] 100%**.
+  - `python3 /home/pi/mic_test/live_meter.py`: **Streamed live dynamic sound level bar with 58.9% VOICE/SOUND bounce**.
+  - `edge-ai.service`: **Active and running cleanly on RPi4**.
+
 
 
 

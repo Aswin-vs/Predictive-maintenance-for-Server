@@ -5,7 +5,7 @@ This guide outlines the exact, step-by-step execution protocol for all 3 nodes i
 2. 🩺 **Doctor Node (Raspberry Pi 4 Edge):** Runs LiteRT INT8 inference (< 0.6ms), Mosquitto broker, physical sensor drivers, and Operator Dashboard on Port `8080`.
 3. 🏨 **Hospital Node (LOQ RTX 4060 Cloud):** Handles deep GPU offloading (Port `8000`), Chat API (Port `8001`), and Ollama Qwen 3.5 4B LLM.
 
-> **⚠️ Security & Authentication:** All POST API endpoints require authentication via `X-API-Key` header. Key: `pm-edge-ac0008caeb077588ba481e57e1bde8af` or `PM_EDGE_2026_KEY`. Health/state GET endpoints are open.
+> **⚠️ Security & Authentication:** All POST API endpoints require authentication via `X-API-Key` header. Key: `<CONFIGURED_IN_ENV>` or `PM_EDGE_2026_KEY`. Health/state GET endpoints are open.
 >
 > **Production Certified (2026-10-02):** 10-Model AI Portfolio, Tailscale WireGuard Mesh, 36/36 Automated Tests Passed.
 
@@ -15,9 +15,9 @@ This guide outlines the exact, step-by-step execution protocol for all 3 nodes i
 
 ### Tailscale Virtual Local Mesh (Primary Production Network):
 - **Tailscale Domain:** `tail1ab139.ts.net`
-- **Raspberry Pi 4 Edge Doctor:** `100.90.160.78` (`rpi4-edge.tail1ab139.ts.net`) — SSH User: `pi`, Pass: `edge12345`
+- **Raspberry Pi 4 Edge Doctor:** `100.90.160.78` (`rpi4-edge.tail1ab139.ts.net`) — SSH User: `pi`, Pass: `<REDACTED_IN_ENV>`
 - **LOQ Cloud Hospital Node:** `100.111.172.121` (`loq.tail1ab139.ts.net`)
-- **IdeaPad S145 Patient Node:** `100.97.69.16` (`ideapads145.tail1ab139.ts.net`) — SSH User: `Aswin`, Pass: `479548`
+- **IdeaPad S145 Patient Node:** `100.97.69.16` (`ideapads145.tail1ab139.ts.net`) — SSH User: `Aswin`, Pass: `<REDACTED_IN_ENV>`
 
 ### Local Subnet (Fallback):
 - **Subnet:** `192.168.137.x` (LOQ: `.1`, RPi4: `.100`, IdeaPad: `.137`)
@@ -81,7 +81,7 @@ Or execute manually in separate terminals:
 SSH into your **Raspberry Pi 4**:
 ```powershell
 ssh pi@100.90.160.78
-# Password: edge12345
+# Password: <REDACTED_IN_ENV>
 ```
 
 The service is configured as a native systemd daemon:
@@ -131,7 +131,7 @@ curl.exe -s http://localhost:8000/api/health
 curl.exe -s http://localhost:8001/api/health
 
 # 4. Check TimescaleDB Ingestion
-docker exec -it timescale psql -U pm_user -d predictive_maintenance -c "SELECT count(*) FROM server_telemetry;"
+docker exec -it pm-timescaledb psql -U pm_user -d predictive_maintenance -c "SELECT count(*) FROM telemetry_raw;"
 ```
 
 All 3 nodes are now fully active, synchronized, and streaming real-time predictive maintenance telemetry!

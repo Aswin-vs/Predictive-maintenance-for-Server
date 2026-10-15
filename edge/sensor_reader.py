@@ -146,23 +146,32 @@ class SensorReader:
             self.adxl_available = False
 
     def _init_inmp441(self):
-        """Probe INMP441 ALSA capture card."""
+        """Probe INMP441 ALSA capture card with multi-device candidate auto-detection."""
         arecord_bin = shutil.which("arecord")
         if not arecord_bin:
             logger.info("arecord binary not present -- INMP441 will use fallback")
             return
-        try:
-            # Capture tiny 64-sample test probe to verify device responds
-            cmd = ["arecord", "-D", self.alsa_device, "-c2", "-r44100", "-fS32_LE", "-s", "64", "-t", "raw"]
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=2.0)
-            if proc.returncode == 0 and len(proc.stdout) > 0:
-                self.inmp441_available = True
-                logger.info(f"INMP441 MEMS microphone initialized (ALSA device '{self.alsa_device}', 44.1 kHz, 32-bit S32_LE)")
-            else:
-                logger.info(f"INMP441 ALSA card probe inactive ({self.alsa_device})")
-        except Exception as e:
-            logger.info(f"INMP441 device probe skipped: {e}")
-            self.inmp441_available = False
+
+        candidates = [self.alsa_device, "plughw:1,0", "plughw:3,0", "plughw:0,0", "hw:1,0", "hw:3,0"]
+        # Deduplicate while preserving order
+        seen = set()
+        devices_to_probe = [d for d in candidates if not (d in seen or seen.add(d))]
+
+        for dev in devices_to_probe:
+            try:
+                # Capture tiny 64-sample test probe to verify device responds
+                cmd = ["arecord", "-D", dev, "-c2", "-r44100", "-fS32_LE", "-s", "64", "-t", "raw"]
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=2.0)
+                if proc.returncode == 0 and len(proc.stdout) > 0:
+                    self.alsa_device = dev
+                    self.inmp441_available = True
+                    logger.info(f"INMP441 MEMS microphone initialized (ALSA device '{self.alsa_device}', 44.1 kHz, 32-bit S32_LE)")
+                    return
+            except Exception as e:
+                logger.debug(f"Candidate {dev} probe failed: {e}")
+
+        logger.info(f"INMP441 ALSA card probe inactive across candidates {devices_to_probe}")
+        self.inmp441_available = False
 
     def _init_dht22(self):
         """Initialize optional DHT22 temperature/humidity sensor."""

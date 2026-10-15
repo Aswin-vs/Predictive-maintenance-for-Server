@@ -2050,37 +2050,6 @@ code, pre, .font-mono {
    Phase H: Adaptive Baseline & Hardware Detail Styles
    ═══════════════════════════════════════════════════════════════ */
 
-/* Calibration Banner */
-.calibration-banner {
-    display: flex; align-items: center; gap: 16px;
-    padding: 14px 20px; margin-bottom: 16px;
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(129, 140, 248, 0.08));
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    border-radius: 12px; animation: calPulse 3s ease-in-out infinite;
-}
-.calibration-banner.calibrated {
-    background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(56, 189, 248, 0.06));
-    border-color: rgba(52, 211, 153, 0.3); animation: none;
-}
-@keyframes calPulse {
-    0%, 100% { border-color: rgba(56, 189, 248, 0.25); }
-    50% { border-color: rgba(56, 189, 248, 0.5); }
-}
-.cal-icon { font-size: 1.8rem; }
-.cal-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.cal-text strong { color: var(--text-primary); font-size: 0.9rem; }
-.cal-text span { color: var(--text-secondary); font-size: 0.78rem; }
-.cal-progress { display: flex; align-items: center; gap: 8px; min-width: 160px; }
-.cal-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-.cal-bar-fill { height: 100%; background: var(--accent-gradient); border-radius: 3px; transition: width 0.8s ease; }
-.cal-pct { color: var(--accent-blue); font-weight: 700; font-size: 0.85rem; min-width: 40px; }
-.cal-force-btn {
-    padding: 6px 14px; border: 1px solid rgba(251,191,36,0.4);
-    background: rgba(251,191,36,0.1); color: #fbbf24;
-    border-radius: 6px; font-size: 0.78rem; font-weight: 600;
-    cursor: pointer; transition: all 0.2s;
-}
-.cal-force-btn:hover { background: rgba(251,191,36,0.2); }
 
 /* Component Health Mini Bars (Simple Overview) */
 .component-health-bars {
@@ -2824,92 +2793,6 @@ code, pre, .font-mono {
     line-height: 1.4;
 }
 
-/* ─── Adaptive Baseline Calibration Banner & Samples Counter ─── */
-.calibration-banner {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.90), rgba(15, 23, 42, 0.95));
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    border-radius: 12px;
-    padding: 14px 20px;
-    margin-bottom: 20px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-}
-
-.cal-icon {
-    font-size: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cal-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-}
-
-.cal-text strong {
-    font-size: 0.95rem;
-    color: var(--text-primary);
-    font-weight: 700;
-}
-
-.cal-text span {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-}
-
-.cal-progress {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 240px;
-}
-
-.cal-bar {
-    flex: 1;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.cal-bar-fill {
-    height: 100%;
-    background: var(--accent-blue, #38bdf8);
-    transition: width 0.4s ease;
-    border-radius: 4px;
-}
-
-.cal-pct {
-    font-family: var(--font-mono, monospace);
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--accent-blue, #38bdf8);
-    min-width: 40px;
-    text-align: right;
-}
-
-.cal-force-btn {
-    padding: 6px 14px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    background: rgba(56, 189, 248, 0.15);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.4);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.cal-force-btn:hover {
-    background: rgba(56, 189, 248, 0.25);
-    transform: translateY(-1px);
-}
 
 /* ─── Per-Component Mini Health Bars ─── */
 .component-health-bars {

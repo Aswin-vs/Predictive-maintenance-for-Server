@@ -603,6 +603,22 @@ async def chat_fallback(request: ChatRequest, raw_req: Request = None):
         import httpx
         header_key = raw_req.headers.get("x-api-key") if raw_req else None
         api_key = header_key or os.environ.get("API_KEY", "")
+        if not api_key:
+            try:
+                _keys_path = os.path.join(BASE_DIR, 'configs', 'api_keys.json')
+                if os.path.exists(_keys_path):
+                    with open(_keys_path, 'r', encoding='utf-8') as _f:
+                        api_key = json.load(_f).get('keys', [''])[0]
+                if not api_key:
+                    _env_path = os.path.join(BASE_DIR, 'configs', 'edge.env')
+                    if os.path.exists(_env_path):
+                        with open(_env_path, 'r', encoding='utf-8') as _f:
+                            for _line in _f:
+                                if _line.startswith("API_KEY="):
+                                    api_key = _line.strip().split("=", 1)[1].strip('"\'')
+                                    break
+            except Exception:
+                pass
         async with httpx.AsyncClient(timeout=95.0) as client:
             with state_lock:
                 state_snapshot = copy.deepcopy(current_state)

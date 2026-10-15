@@ -43,10 +43,10 @@ if os.path.exists(net_env):
 
 RPI4_HOST = os.environ.get("RPI4_HOST", "rpi4-edge.tail1ab139.ts.net")
 RPI4_USER = os.environ.get("RPI4_USER", "pi")
-RPI4_PASS = os.environ.get("RPI4_PASS", "edge12345")
+RPI4_PASS = os.environ.get("RPI4_PASS", "")
 CLOUD_URL = os.environ.get("CLOUD_INFERENCE_URL", "http://localhost:8000")
 DASHBOARD_URL = os.environ.get("EDGE_API_URL", "http://rpi4-edge.tail1ab139.ts.net:8080")
-API_KEY = "pm-edge-ac0008caeb077588ba481e57e1bde8af"
+API_KEY = os.environ.get("API_KEY", os.environ.get("PM_API_KEY", ""))
 
 
 def benchmark():

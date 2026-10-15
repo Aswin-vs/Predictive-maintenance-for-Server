@@ -55,6 +55,18 @@ from edge.adaptive_baseline import AdaptiveBaseline
 
 logger = get_logger("edge_main")
 
+# Specialist model routing (non-destructive — wraps existing pipeline)
+try:
+    from edge.model_router import ModelRouter, ModelResult
+    from edge.ensemble_decision import EnsembleDecisionEngine
+    _model_router = ModelRouter()
+    _ensemble_engine = EnsembleDecisionEngine()
+    MODEL_ROUTER_AVAILABLE = True
+    logger.info("ModelRouter + EnsembleDecision loaded successfully")
+except Exception as e:
+    MODEL_ROUTER_AVAILABLE = False
+    logger.info(f"ModelRouter unavailable (non-critical): {e}")
+
 # Per-server adaptive baseline engines
 adaptive_baselines: Dict[str, AdaptiveBaseline] = {}
 
@@ -255,57 +267,57 @@ def extract_features(flat_telemetry: Dict[str, float], server_id: str = "default
     for feat_name in FEATURE_NAMES_V1:
         row[feat_name] = features.get(feat_name, FEATURE_DEFAULTS.get(feat_name, 0.0))
     
-    # Model input normalization for legacy 1D-CNN (trained on 16GB / 37.5°C milling benchmark)
+    # ── BUG-ML-02 FIX: Continuous Welford Z-score projection ──
+    # Instead of overwriting features with dead static constants (which zeroes
+    # out variance and causes 14.5% uniform Softmax collapse), project the
+    # server's live Welford Z-score onto the AI4I scaler's training distribution.
+    # Math: x_model_i = mu_nominal_i + clip(z_server_i, -5, +5) * sigma_nominal_i
+
     model_row = dict(row)
+    baseline = adaptive_baselines.get(server_id)
 
-    # 1. RAM Normalization:
-    # Model scaler has mean=16.0, scale=1.0 for ram_total_gb, and mean=4.87, scale=3.04 for ram_used_gb.
-    # Preserve genuine values in telemetry while scaling model input to avoid false-positive MEMORY_FAULT.
-    ram_tot = float(row.get('ram_total_gb', 16.0))
-    ram_usd = float(row.get('ram_used_gb', 4.0))
-    if ram_tot > 0:
-        ratio = min(1.0, max(0.0, ram_usd / ram_tot))
-        model_row['ram_total_gb'] = 16.0
-        if ratio > 0.90:
-            model_row['ram_used_gb'] = 14.0  # Trigger memory warning if nearly exhausted
+    DOMAIN_PARAMS = {
+        # feature_name: (mu_nominal, sigma_nominal, component_id, metric_name)
+        'ram_total_gb': (16.0, 1.0, 'ram', 'total_gb'),
+        'ram_used_gb': (4.87, 3.04, 'ram', 'used_gb'),
+        'ram_page_faults': (50.0, 200.0, 'ram', 'page_faults'),
+        'cpu_temp': (37.5, 5.2, 'cpu', 'temp'),
+        'cpu_freq': (3000.0, 500.0, 'cpu', 'freq'),
+        'cpu_ambient_delta': (10.6, 3.8, 'cpu', 'delta'),
+        'gpu_temp': (40.0, 8.0, 'gpu', 'temp'),
+        'gpu_power': (30.0, 15.0, 'gpu', 'power'),
+        'gpu_clock': (1500.0, 300.0, 'gpu', 'clock'),
+        'gpu_mem_used': (500.0, 400.0, 'gpu', 'vram_mb'),
+        'gpu_util': (10.0, 15.0, 'gpu', 'util'),
+        'psu_voltage_12v_dev': (2.18, 1.5, 'psu', 'dev_12v'),
+        'psu_voltage_3v3_dev': (0.5, 0.8, 'psu', 'dev_3v3'),
+        'psu_voltage_stability': (0.05, 0.03, 'psu', 'stability'),
+    }
+
+    for feat, (mu_nom, sigma_nom, comp_id, metric_name) in DOMAIN_PARAMS.items():
+        raw_val = float(row.get(feat, mu_nom))
+        z_server = None
+
+        if baseline:
+            # Track and score canonical v1 feature key directly so key names always match
+            baseline.update_metric("v1", feat, raw_val)
+            b = baseline.baselines.get(baseline._metric_key("v1", feat))
+            if b and b.count >= 5:
+                z_server = baseline.get_z_score("v1", feat, raw_val)
+
+        if z_server is not None:
+            # Calibrated (>5 ticks): project server Z-score onto scaler's training distribution
+            model_row[feat] = mu_nom + float(np.clip(z_server, -5.0, 5.0)) * sigma_nom
         else:
-            # Map nominal operational memory usage cleanly into model's nominal range (3.5 - 6.5 GB)
-            model_row['ram_used_gb'] = round(4.87 + (ratio - 0.50) * 2.0, 2)
-
-    raw_faults = float(row.get('ram_page_faults', 50.0))
-    if raw_faults < 1500.0:
-        model_row['ram_page_faults'] = 50.0
-
-    # 2. CPU Thermal & Frequency Normalization:
-    # Modern CPUs operate nominally at 55°C - 75°C under load, whereas legacy AI4I operated at ~37°C.
-    # Only allow raw high temperatures to reach the 1D-CNN if genuinely thermal throttling (> 85°C).
-    raw_cpu_t = float(row.get('cpu_temp', 45.0))
-    raw_delta = float(row.get('cpu_ambient_delta', 20.0))
-    if raw_cpu_t < 85.0:
-        model_row['cpu_temp'] = round(37.5 + (raw_cpu_t - 50.0) * 0.1, 1)
-        model_row['cpu_ambient_delta'] = round(10.6 + (raw_delta - 25.0) * 0.1, 1)
-    else:
-        model_row['cpu_temp'] = raw_cpu_t
-        model_row['cpu_ambient_delta'] = raw_delta
-    model_row['cpu_freq'] = 3000.0
-
-    # 3. GPU Normalization:
-    raw_gpu_t = float(row.get('gpu_temp', 40.0))
-    if raw_gpu_t < 85.0:
-        model_row['gpu_temp'] = 40.0
-    else:
-        model_row['gpu_temp'] = raw_gpu_t
-    model_row['gpu_power'] = 30.0
-    model_row['gpu_clock'] = 1500.0
-    model_row['gpu_mem_used'] = 500.0
-    model_row['gpu_util'] = 10.0
-
-    # 4. PSU Voltage Normalization:
-    dev_12v = float(row.get('psu_voltage_12v_dev', 0.5))
-    if dev_12v < 5.0:
-        model_row['psu_voltage_12v_dev'] = 2.18
-    model_row['psu_voltage_3v3_dev'] = 0.5
-    model_row['psu_voltage_stability'] = 0.05
+            # Cold start (<5 ticks) or stateless pytest: keep small natural jitter around mu_nom,
+            # but pass extreme physical anomalies (e.g. cpu_temp > 80°C) through to the model!
+            if feat == 'cpu_temp' and raw_val > 80.0:
+                model_row[feat] = raw_val
+            elif feat == 'ram_page_faults' and raw_val >= 1500.0:
+                model_row[feat] = raw_val
+            else:
+                jitter = ((raw_val % 1.0) - 0.5) * 0.1 * sigma_nom
+                model_row[feat] = mu_nom + jitter
 
     df = pd.DataFrame([model_row], columns=FEATURE_NAMES_V1)
     
@@ -491,6 +503,25 @@ def on_telemetry_received(data: Dict[str, Any]):
 
         # Store calculated TTF in result predictions so SQLite local_store records it
         result.setdefault("predictions", {})["ttf_days"] = ttf_days
+
+        # Specialist model routing (safe, non-destructive)
+        if MODEL_ROUTER_AVAILABLE:
+            try:
+                specialist_results = _model_router.route(flat)
+                if specialist_results:
+                    result['specialist_models'] = [
+                        {'model': r.model_name, 'prediction': r.prediction,
+                         'confidence': r.confidence, 'metadata': r.metadata}
+                        for r in specialist_results
+                    ]
+                    ensemble = _ensemble_engine.decide(
+                        specialist_results, telemetry=flat, server_id=server_id
+                    )
+                    if ensemble:
+                        result['ensemble_health'] = ensemble.health_score
+                        result['ensemble_severity'] = ensemble.severity
+            except Exception as e:
+                logger.debug(f"Specialist routing skipped: {e}")
 
         # Step 5: Persist to SQLite ring buffer
         try:

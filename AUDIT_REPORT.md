@@ -14,9 +14,9 @@
 This document certifies the exhaustive pre-release audit, defect reconciliation, data leakage review, multi-node ground truth verification, and live dashboard audit conducted across the **Edge-AI Predictive Maintenance for Server Hardware** ecosystem.
 
 The audit examined every layer of the 3-device distributed architecture:
-1. **Physical Hardware & Sensor Tier:** Raspberry Pi 4 Model B (4GB RAM) with real hardware drivers for **ADXL345** (3-axis I2C accelerometer at address `0x53`) and **INMP441** (digital I2S MEMS microphone via ALSA `plughw:3,0`), verified collecting authentic physical vibration (~0.022g RMS) and acoustic pressure (~0.11 normalized RMS).
+1. **Physical Hardware & Sensor Tier:** Raspberry Pi 4 Model B (4GB RAM) with real hardware drivers for **ADXL345** (3-axis I2C accelerometer at address `0x53`) and **INMP441** (digital I2S MEMS microphone via ALSA `plughw:1,0`), verified collecting authentic physical vibration (~0.022g RMS) and acoustic pressure (~0.11 normalized RMS).
 2. **Edge Diagnostic Engine (The Doctor):** Google LiteRT (TFLite) INT8 runtime hosting 4 specialist sub-millisecond edge models (ST-GCN graph attention, 1D-CNN Multi-Task classifier, Fan Bearing Cavitation CNN, and TCN Storage RUL regressor) coupled with an unsupervised Isolation Forest and dynamic Z-score Adaptive Baselines.
-3. **Cloud GPU Hospital Tier:** Lenovo LOQ (AMD Ryzen 7, 24GB DDR5, NVIDIA RTX 4060 8GB VRAM) running full FP32 PyTorch CUDA models (ST-GCN, MAD-GAN, LSTM-Autoencoder, Cloud Multi-Model Fusion), TimescaleDB time-series storage, and a localized Ollama Llama 3.1 8B LLM with 36-feature RAG context.
+3. **Cloud GPU Hospital Tier:** Lenovo LOQ (AMD Ryzen 7, 24GB DDR5, NVIDIA RTX 4060 8GB VRAM) running full FP32 PyTorch CUDA models (ST-GCN, MAD-GAN, LSTM-Autoencoder, Cloud Multi-Model Fusion), TimescaleDB time-series storage, and a localized Ollama Qwen 3.5 4B LLM with 36-feature RAG context.
 4. **Monitored Patient Fleet:** Dual live telemetry streams from both Lenovo LOQ (`4c007433-db55-4309-8b41-2de057e9449b`) and Lenovo IdeaPad S145 (`76a82f6f-4498-4914-b960-3295224ec28b`) operating over Tailscale WireGuard mesh with zero packet drop.
 
 ### 🌟 Overall Health & Quality Scorecard
@@ -44,11 +44,11 @@ The audit validated the exact physical state, OS parameters, process IDs, and ac
 | **Physical Hardware** | AMD Ryzen 7 7435HS, 24GB DDR5, RTX 4060 8GB | ARM Cortex-A72 (BCM2711), 4GB LPDDR4 | AMD Ryzen 5 3500U, 8GB DDR4, Radeon Vega 8 |
 | **Operating System** | Windows 11 Home 64-bit | Raspberry Pi OS Lite 64-bit (Debian 12) | Windows 11 Home 64-bit |
 | **Active Service 1** | FastAPI Inference `:8000` (PID 23872) | `edge-ai.service` `:8080` (PID 53168) | Windows Scheduled Task `PredictiveMaintenancePatient` |
-| **Active Service 2** | Ollama Llama 3.1 8B `:8001` (PID 27656) | Mosquitto MQTT Broker `:1883` | Background Telemetry Agent (`collector_v2.py`) |
+| **Active Service 2** | Ollama Qwen 3.5 4B `:8001` (PID 27656) | Mosquitto MQTT Broker `:1883` | Background Telemetry Agent (`collector_v2.py`) |
 | **Active Service 3** | TimescaleDB / Postgres `:5432` | Local SQLite Buffer `edge_cache.db` | Local Storage WMI / SMART Collectors |
 | **Active Service 4** | Telemetry Publisher (`mqtt_publisher_v2.py`) | Physical Sensor Poller (`sensor_reader.py`) | N/A (Client Node) |
 | **Physical Storage Drives** | 3 Drives: Micron 512GB NVMe (`C:`), Samsung 512GB NVMe (`D:`), JMicron 1TB HDD (`A:`) | 1 Drive: SanDisk 32GB MicroSD (A1 Class 10) | 2 Drives: Acer 480GB SATA SSD (`C:`), cablet 1TB USB 3.0 HDD (`D:`) |
-| **Attached Physical Sensors** | N/A (GPU NVML, WMI Thermal Zone) | ADXL345 (I2C `0x53`), INMP441 (ALSA `plughw:3,0`) | N/A (Software Telemetry Agent) |
+| **Attached Physical Sensors** | N/A (GPU NVML, WMI Thermal Zone) | ADXL345 (I2C `0x53`), INMP441 (ALSA `plughw:1,0`) | N/A (Software Telemetry Agent) |
 | **Physical Sensor Values** | 64.1°C – 66.1°C dynamic ACPI CPU temp | Dynamic vibration: 0.022g RMS, acoustic: 0.11 RMS | Dynamic ACPI / WMI metrics |
 
 ---
@@ -83,7 +83,7 @@ Predictive maintenance for Server/
 │   ├── deep_analysis/         # Heavy AI offload, decision fusion, and TSDB writer
 │   │   ├── inference_server.py # FastAPI service (:8000) for GPU inference
 │   │   ├── cloud_fusion.py    # Multi-model tensor fusion with confidence weighting
-│   │   ├── chat_api.py        # Ollama Llama 3.1 8B RAG endpoint (:8001)
+│   │   ├── chat_api.py        # Ollama Qwen 3.5 4B RAG endpoint (:8001)
 │   │   └── tsdb_writer.py     # Batch TimescaleDB ingestion pipeline
 │   ├── telemetry_agent/       # Multi-platform telemetry collector plugins
 │   │   ├── collector_v2.py    # 6-subsystem orchestrator with graceful fallbacks
@@ -181,7 +181,7 @@ The operator console was audited via autonomous Chromium browser subagent (`dash
 | **Tab 8: Platform Health**| 3-Tier Distributed Topology | Checks connectivity to :8080, :8000, :8001 | All 3 nodes & ports display green **ONLINE** | ✅ **PASSED** |
 | **Tab 9: Cloud Fusion** | Run Analysis (`#btnRunCloudFusion`)| Computes multi-model ensemble verdict | Updates live: MAD-GAN, ST-GCN, LSTM-AE scores | ✅ **PASSED** |
 | **AI Assistant Drawer** | Drawer Toggle (`#btnToggleChat`) | Slides chat panel open/closed | Opens smoothly with quick prompts | ✅ **PASSED** |
-| **AI Assistant Chat** | Quick Prompt (`Explain Risks`) | Queries Ollama Llama 3.1 8B with RAG context | Streams detailed hardware explanation | ✅ **PASSED** |
+| **AI Assistant Chat** | Quick Prompt (`Explain Risks`) | Queries Ollama Qwen 3.5 4B with RAG context | Streams detailed hardware explanation | ✅ **PASSED** |
 
 ---
 
@@ -249,7 +249,7 @@ During academic defense and technical viva evaluations, four fundamental archite
 - [x] **Executive Summary view shows 100% fleet health with live sample counter**
 - [x] **All 9 operator dashboard tabs tested and verified via Chromium browser subagent**
 - [x] **Table column sorting and CSV/JSON export actions verified operational**
-- [x] **Ollama Llama 3.1 8B AI diagnostic drawer verified streaming live RAG context**
+- [x] **Ollama Qwen 3.5 4B AI diagnostic drawer verified streaming live RAG context**
 - [x] **36/36 automated pytest regression tests passing with 100% success rate**
 
 ### Production Readiness Score

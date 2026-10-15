@@ -159,6 +159,7 @@ def _generate_synthetic_calibration_data(scaler, n_samples: int = 100):
         # Apply scaler if available (ensures correct INT8 ranges matching training distribution)
         if scaler is not None:
             sample_2d = scaler.transform(sample_2d).astype(np.float32)
+        sample_2d = np.clip(sample_2d, -6.0, 6.0).astype(np.float32)
 
         data = sample_2d.reshape(1, FEATURE_COUNT, 1)
         yield [data]
@@ -199,6 +200,7 @@ def representative_dataset_gen():
             # Apply scaler if available (ensures correct INT8 ranges)
             if scaler is not None:
                 sample_2d = scaler.transform(sample_2d).astype(np.float32)
+            sample_2d = np.clip(sample_2d, -6.0, 6.0).astype(np.float32)
 
             data = sample_2d.reshape(1, 28, 1)
             yield [data]
@@ -238,7 +240,7 @@ def quantize_and_export():
     converter.representative_dataset = representative_dataset_gen
     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
     converter.inference_input_type = tf.int8
-    converter.inference_output_type = tf.int8
+    converter.inference_output_type = tf.float32  # Softmax+TTF need float32 precision
 
     print("Converting model to INT8 TFLite...")
     try:

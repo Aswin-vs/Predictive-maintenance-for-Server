@@ -7,6 +7,11 @@ REM ---- Load Network Config ----
 for /f "usebackq eol=# tokens=1,2 delims==" %%A in ("%~dp0configs\network.env") do (
     set "%%A=%%B"
 )
+REM ---- Fallback defaults if network.env is missing/incomplete ----
+if "%RPI4_IP%"=="" set "RPI4_IP=rpi4-edge.tail1ab139.ts.net"
+if "%EDGE_BROKER_HOST%"=="" set "EDGE_BROKER_HOST=%RPI4_IP%"
+if "%MQTT_PORT%"=="" set "MQTT_PORT=1883"
+if "%CLOUD_HOST%"=="" set "CLOUD_HOST=100.111.172.121"
 
 echo.
 echo ================================================================

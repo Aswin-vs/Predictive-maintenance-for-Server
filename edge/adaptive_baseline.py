@@ -387,6 +387,73 @@ class AdaptiveBaseline:
         # Smooth sigmoid mapping: z=1→0.0, z=2→0.15, z=3→0.5, z=4→0.85, z=5→0.97
         return 1.0 / (1.0 + math.exp(-1.5 * (z - 3.0)))
 
+    def update_metric(self, component_id: str, metric_name: str, value: float):
+        """
+        Incrementally update baseline statistics for a single metric using Welford's algorithm.
+        Enables tracking canonical v1 features even during cold-start or early ticks.
+        """
+        if math.isnan(value) or math.isinf(value):
+            return
+        key = self._metric_key(component_id, metric_name)
+        if key not in self.baselines:
+            self.baselines[key] = MetricBaseline(
+                mean=float(value),
+                std=0.0,
+                min_val=float(value),
+                max_val=float(value),
+                count=1,
+                last_updated=datetime.now(timezone.utc).isoformat()
+            )
+            return
+
+        b = self.baselines[key]
+        b.count += 1
+        delta = value - b.mean
+        b.mean += delta / b.count
+        delta2 = value - b.mean
+        if b.count > 1:
+            var = ((b.count - 2) * (b.std ** 2) + delta * delta2) / (b.count - 1)
+            b.std = math.sqrt(max(0.0, var))
+        b.min_val = min(b.min_val, value)
+        b.max_val = max(b.max_val, value)
+        b.last_updated = datetime.now(timezone.utc).isoformat()
+
+    def get_z_score(self, component_id: str, metric_name: str, value: float) -> float:
+        """
+        Return the raw signed Z-score for a metric value against its learned baseline.
+        Uses the same domain-aware variance floor as score_metric().
+        Returns 0.0 if metric is unknown, count < 2, or uncalibrated.
+        """
+        key = self._metric_key(component_id, metric_name)
+        if key not in self.baselines:
+            return 0.0
+
+        b = self.baselines[key]
+        if b.count < 2 or b.std < 1e-8:
+            return 0.0
+
+        min_std = 0.5
+        metric_lower = metric_name.lower()
+        if "percent" in metric_lower or "pct" in metric_lower:
+            min_std = 15.0
+        elif "battery" in metric_lower:
+            min_std = 25.0
+        elif "used_gb" in metric_lower or "available_gb" in metric_lower or "committed_gb" in metric_lower:
+            min_std = 4.0
+        elif "load" in metric_lower or "util" in metric_lower:
+            min_std = 15.0
+        elif "mhz" in metric_lower or "clock" in metric_lower:
+            min_std = 250.0
+        elif "rpm" in metric_lower:
+            min_std = 150.0
+        elif "fault" in metric_lower:
+            min_std = 500.0
+        elif "voltage" in metric_lower:
+            min_std = 0.5
+
+        effective_std = max(b.std, min_std)
+        return (value - b.mean) / effective_std
+
     def score_component(self, component_id: str, metrics: Dict[str, float]) -> Tuple[float, Dict[str, float]]:
         """
         Score all metrics for a component. Returns (health_score_0to100, per_metric_scores).
