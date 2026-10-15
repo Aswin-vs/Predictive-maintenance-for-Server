@@ -182,6 +182,12 @@ Key features include: thermal ramp rates (°C/sec), Δ-features (rate of change)
   - DOC-04: Replaced `MAX4466` references with `INMP441` as primary acoustic sensor across `docs/project_viva_walkthrough.md` and `docs/device_roles.md`.
   - DOC-06: Updated TCN Storage RUL MAE metric to 15.94 days across documentation.
 - [x] **Run pytest regression suite (36/36 passed, 0 failures, 100% success rate)**
+- [x] **Execute Build & Sync Sequence (Compiled Artifacts & Hardware Nodes):**
+  - Re-quantized `classifier_int8.tflite` (132.90 KB) with calibration clipping $[-6, 6]$ and `inference_output_type=float32`.
+  - Redacted plaintext credentials and API keys in `docs/master_execution_guide.md` (DOC-01).
+  - Recompiled publication master PDF `Edge_AI_Complete_Master_Project_Dossier.pdf` (3.3 MB) incorporating all documentation fixes.
+  - Deployed all updated source, models, and dashboard assets to Raspberry Pi 4 Doctor (`rpi4-edge.tail1ab139.ts.net`), reloaded daemon, and restarted `edge-ai.service` via `deploy_all.py`.
+  - Staged, committed (`9f2789f`), and pushed all changes to GitHub `origin/main` (`https://github.com/Aswin-vs/Predictive-maintenance-for-Server.git`).
 
 ### 🏆 Phase 16: Live Physical Sensor Smoke Test & Isolated Diagnostic Suite — COMPLETED (2026-10-14)
 
