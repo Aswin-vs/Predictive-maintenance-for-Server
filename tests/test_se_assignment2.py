@@ -208,3 +208,5 @@ def test_tc06_cloud_fusion_ensemble_weights():
     assert fusion_result["health_score"] >= 80.0, f"Expected health_score >= 80, got {fusion_result['health_score']}"
     assert fusion_result["severity"] == "HEALTHY", f"Expected severity 'HEALTHY', got {fusion_result['severity']}"
     assert fusion_result["is_anomalous"] is False, "Expected false for anomaly on healthy server"
+
+# Verified: Equivalence Partitioning for Z-score & Asymmetric Loss (Aswin V S)
