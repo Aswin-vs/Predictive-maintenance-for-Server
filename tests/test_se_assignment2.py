@@ -210,3 +210,7 @@ def test_tc06_cloud_fusion_ensemble_weights():
     assert fusion_result["is_anomalous"] is False, "Expected false for anomaly on healthy server"
 
 # Verified: Equivalence Partitioning for Z-score & Asymmetric Loss (Aswin V S)
+
+# Module: TimescaleDB Ingestion & SQLite WAL Outbox Sync (Karthik S, Roll 40)
+
+# Verified: TC05 Missing sensor diode schema imputation robustness (Karthik S)
