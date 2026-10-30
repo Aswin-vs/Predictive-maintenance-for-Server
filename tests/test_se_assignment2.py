@@ -216,3 +216,5 @@ def test_tc06_cloud_fusion_ensemble_weights():
 # Verified: TC05 Missing sensor diode schema imputation robustness (Karthik S)
 
 # Module: Operator Console Status Badge & Baseline Variance Floors (Sijo S, Roll 59)
+
+# Verified: TC06 Cloud Decision Fusion 60/20/10/10 ensemble weights (Sijo S)
