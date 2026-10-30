@@ -1,8 +1,23 @@
+![CI](https://github.com/Aswin-vs/Predictive-maintenance-for-Server/actions/workflows/ci.yml/badge.svg)
+
 # 🖥️ Edge-AI Predictive Maintenance for Server Hardware
 
-**Status: 🚀 100% PRODUCTION CERTIFIED — Phase 7 Complete: Multi-Device End-to-End Latency Waterfall Verified, Physical Sensors (ADXL345+INMP441), Tailscale Mesh (`tail1ab139.ts.net`), 6 Enterprise Datasets, Asymmetric Survival TTF Loss, TimescaleDB, 36/36 Unit & Regression Tests Passed (2026-09-26)**
+**Status: 🚀 100% PRODUCTION CERTIFIED — Phase 7 & Phase 2B Complete: Multi-Device End-to-End Latency Waterfall Verified, Physical Sensors (ADXL345+INMP441), Tailscale Mesh (`tail1ab139.ts.net`), 8 Enterprise Datasets, Asymmetric Survival TTF Loss, TimescaleDB, 37/37 Unit & Regression Tests Passed (2026-10-16)**
 
-B.Tech CSE with AI Specialization — Final Year Project
+**B.Tech Computer Science and Engineering (AI Specialization) — S7 Main Project (23CTB40B Software Engineering Assignment 2)**
+
+---
+
+### 👥 Team Members (Main Project Group)
+
+| Roll No. | College ID | KTU Reg No. | Name | Role / Module Assigned |
+| :---: | :---: | :---: | :--- | :--- |
+| **21** | B23CS2121 | MBT23CA021 | **Aswin V S** | Edge Inference Engine, Confidence Router & Boundary Value Analysis (BVA) Testing |
+| **29** | B23CS2129 | MBT23CA029 | **Gokul Jayan J R** | GitHub Actions CI/CD Pipeline, Automated Testing & Cloud Decision Fusion |
+| **40** | B23CS2140 | MBT23CA039 | **Karthik S** | TimescaleDB Hypertable Ingestion & SQLite WAL Outbox Watermark Sync |
+| **59** | B23CS2159 | MBT23CA058 | **Sijo S** | Operator Console UI, Live Node Status Indicators & Multi-Sensor Telemetry |
+
+---
 
 ## 📖 Project Overview
 
@@ -16,18 +31,18 @@ A production-grade Edge-AI system that predicts hardware failures (CPU, GPU, HDD
 
 ### AI Model Portfolio (10 Models & Engines)
 
-| # | Model / Engine | Task | Location | Footprint | Verified Latency |
-|---|---|---|---|---|---|
-| 1 | **ST-GCN Enterprise** | Spatio-temporal graph anomaly on 36 features | Edge (LiteRT INT8) + Cloud (PyTorch) | 9.7 KB / 63 KB | **0.029 ms** (Edge) / 10 ms (Cloud) |
-| 2 | **1D-CNN Multi-Task** | 7-class fault classification + TTF regression | Edge (LiteRT INT8) + Cloud (FP32) | 132.6 KB | **0.160 ms** (Edge) |
-| 3 | **Fan Bearing CNN** | PWM/RPM deviation + acoustic/vibration shock | Edge (LiteRT INT8) | 27.2 KB | **0.076 ms** (Edge) |
-| 4 | **TCN Storage RUL** | Temporal Conv remaining useful life (Backblaze SMART) | Edge (LiteRT INT8) | 141.0 KB | **0.547 ms** (Edge) |
-| 5 | **Isolation Forest** | Unsupervised electrical/thermal anomaly detection | Edge (scikit-learn) | 1,020 KB | ~1.5 ms (Edge) |
-| 6 | **LSTM-Autoencoder** | Unsupervised reconstruction error anomaly detection | Cloud (Keras / GPU) | — | ~4.5 ms (Cloud) |
-| 7 | **MAD-GAN** | Multivariate anomaly generator + discriminator | Cloud (PyTorch CUDA) | 301 KB | ~3.8 ms (Cloud) |
-| 8 | **XGBoost HDD** | Enterprise drive failure specialist (17.1M records) | Cloud + SHAP | — | ~2.0 ms (Cloud) |
-| 9 | **Cloud Decision Fusion** | Weighted multi-model ensemble & severity triage | Cloud (Python) | — | <0.1 ms (Cloud) |
-| 10 | **Qwen 3.5 4B (Ollama)** | RAG diagnostic assistant over live telemetry & SHAP | Cloud (GPU, 3.4GB VRAM) | 3.1 GB | Interactive (~15s) |
+| # | Model / Engine | Task | Location | Footprint | Verified Latency | Key Empirical Metrics |
+|---|---|---|---|---|---|---|
+| 1 | **1D-CNN Multi-Task** | 7-class fault classification + TTF regression | Both (LiteRT INT8 / FP32) | 132.90 KB | **0.018 ms – 0.160 ms** (Edge) | **99.38% Acc**, 0.2129 TTF MAE (21.92d bounded) |
+| 2 | **ST-GCN Enterprise** | Spatio-temporal graph anomaly (36 features) | Both (LiteRT INT8 / PyTorch) | 9.7 KB / 63 KB | **0.029 ms** (Edge) / 1.69 ms (Cloud) | **44.03% – 57.93% F1**, Spatial Mask Gating Active |
+| 3 | **Fan Bearing CNN** | PWM/RPM deviation + acoustic/vibration shock | Edge (LiteRT INT8) | 27.2 KB | **0.076 ms** (Edge) | **100% Test Accuracy**, AUC: 1.000 |
+| 4 | **TCN Storage RUL** | Temporal Conv remaining useful life (Backblaze SMART) | Edge (LiteRT INT8) | 141.0 KB | **0.547 ms** (Edge) | **15.94 Days MAE**, 33-day receptive field |
+| 5 | **Isolation Forest** | Unsupervised electrical/thermal anomaly detection | Edge (scikit-learn) | 1,020 KB | ~1.5 ms (Edge) | **100% Sag Detection** (<11.4V sags) |
+| 6 | **LSTM-Autoencoder** | Unsupervised reconstruction error anomaly detection | Cloud (Keras / GPU) | 900 KB | ~4.5 ms (Cloud) | **0.0949 MSE Loss**, Threshold $\tau=0.330935$ |
+| 7 | **MAD-GAN (28-Ch)** | Multivariate anomaly generator + discriminator | Cloud (PyTorch CUDA) | 308 KB | **1.87 ms** (Cloud) | **99.96% Prec, 80.62% Rec, 89.25% F1** |
+| 8 | **XGBoost HDD** | Enterprise drive failure specialist (Backblaze) | Cloud + SHAP | 2.1 MB | **3.08 ms** (Cloud) | **90.73% 30-day Acc, RMSE: 17.54d, MAE: 11.01d** |
+| 9 | **Cloud Decision Fusion** | Weighted multi-model ensemble & severity triage | Cloud (Python) | — | <0.1 ms (Cloud) | **60% Edge 1D-CNN, 20% LSTM-AE, 10% ST-GCN, 10% MAD-GAN** |
+| 10 | **Qwen 3.5 4B (Ollama)** | RAG diagnostic assistant over live telemetry & SHAP | Cloud (GPU, 3.1GB VRAM) | 3.1 GB | ~7.9 sec (Cloud) | Real-time Context-Aware Hardware Actions |
 
 ## 📁 Repository Structure
 
@@ -74,7 +89,7 @@ server/
 │   └── ...                  # train_classifier, train_lstm_ae, train_xgboost, etc.
 └── optimization/            # FP32→INT8 quantization
 
-dashboard/                   # Glassmorphic HTML/JS/CSS operator UI (5 tabs)
+dashboard/                   # Glassmorphic HTML/JS/CSS operator UI (9 tabs)
 configs/                     # Per-device .env files (edge, server, cloud)
 tests/                       # End-to-end API tests
 docs/                        # Design docs, setup guides, device roles
@@ -85,7 +100,7 @@ data/                        # Datasets (Backblaze, AI4I 2020, NASA C-MAPSS, SMD
 
 All POST API endpoints require authentication via `X-API-Key` header:
 
-- **API Key:** `pm-edge-ac0008caeb077588ba481e57e1bde8af`
+- **API Key:** `<CONFIGURED_IN_ENV>` (loaded from `configs/edge.env` / `configs/api_keys.json`)
 - **Cloud:** Keys stored in `configs/api_keys.json`
 - **Edge:** `API_KEY` loaded from `configs/edge.env`
 - Rate limiting: 100 req/min per IP on cloud endpoints

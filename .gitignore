@@ -61,3 +61,7 @@ configs/edge.env
 configs/cloud.env
 configs/server.env
 configs/api_keys.json
+
+# Software Engineering Assignment 2 Artifacts (Temporary — delete anytime after submission)
+se_assignment2_artifacts/
+
